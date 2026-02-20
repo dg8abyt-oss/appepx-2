@@ -130,25 +130,31 @@
             for (const token of tokens) {
                 if (token.type === 'code') {
                     currentCode = token.text;
-                    currentLanguage = token.lang || 'javascript';
-                    
-                    // Update code block
-                    codeDisplay.className = `language-${currentLanguage} text-sm font-mono`;
-                    codeDisplay.textContent = currentCode;
-                    hljs.highlightElement(codeDisplay);
-
-                    // Update file name based on language
-                    const extension = currentLanguage === 'javascript' ? 'js' : 
-                                      currentLanguage === 'html' ? 'html' : 
-                                      currentLanguage === 'css' ? 'css' : 
-                                      currentLanguage === 'json' ? 'json' : 'txt';
-                    fileNameDisplay.textContent = `code.${extension}`;
-
+                    currentLanguage = token.lang || 'html';
                     codeFound = true;
-                    // For now, only display the first code block found
                     break;
                 }
             }
+            
+            // FALLBACK: If the AI forgot backticks, assume the whole response is code
+            if (!codeFound) {
+                console.log("No code block found, using raw text fallback.");
+                currentCode = markdown.trim();
+                currentLanguage = 'html'; // Default to HTML
+            }
+
+            // Update code block UI
+            codeDisplay.className = `language-${currentLanguage} text-sm font-mono`;
+            codeDisplay.textContent = currentCode;
+            hljs.highlightElement(codeDisplay);
+
+            // Update file name based on language
+            const extension = currentLanguage === 'javascript' ? 'js' : 
+                              currentLanguage === 'html' ? 'html' : 
+                              currentLanguage === 'css' ? 'css' : 
+                              currentLanguage === 'json' ? 'json' : 'txt';
+            fileNameDisplay.textContent = `code.${extension}`;
+        }
             
             if (!codeFound) {
                 // Optional: Handle cases where no code is generated
