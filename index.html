@@ -85,7 +85,7 @@
 
     </div>
 
-    <script>
+<script>
         const chatContainer = document.getElementById('chat-container');
         const inputField = document.getElementById('prompt-input');
         const codeDisplay = document.getElementById('code-display');
@@ -154,12 +154,6 @@
                               currentLanguage === 'css' ? 'css' : 
                               currentLanguage === 'json' ? 'json' : 'txt';
             fileNameDisplay.textContent = `code.${extension}`;
-        }
-            
-            if (!codeFound) {
-                // Optional: Handle cases where no code is generated
-                console.log("No code block found in AI response.");
-            }
         }
 
         function downloadCode() {
