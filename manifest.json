@@ -1,0 +1,16 @@
+{
+  "name": "Appex Vibe Coder",
+  "short_name": "Appex",
+  "description": "Vibe coding AI gateway app",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "https://ik.imagekit.io/migbb/vibe-coding.png?updatedAt=1771554953655",
+      "sizes": "200x200",
+      "type": "image/png"
+    }
+  ]
+}
