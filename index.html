@@ -3,325 +3,456 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Appex Vibe Coder - Studio</title>
+    <title>Appex Vibe Coder - Studio Pro</title>
     
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="https://ik.imagekit.io/migbb/vibe-coding.png?updatedAt=1771554953655" type="image/png" sizes="200x200" />
     <meta name="theme-color" content="#0f172a">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://gateway.dhruvs.host/widget.js" defer></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://unpkg.com/typescript@5.3.3/lib/typescriptServices.js"></script>
 
     <style>
-        /* Modern Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
         body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200 h-screen flex overflow-hidden">
 
-    <div class="flex w-full h-full">
+    <div class="w-48 flex flex-col bg-[#050505] border-r border-slate-800 z-10">
+        <div class="p-3 border-b border-slate-800 flex items-center gap-2">
+            <img src="https://ik.imagekit.io/migbb/vibe-coding.png?updatedAt=1771554953655" class="w-5 h-5 rounded">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Workspaces</span>
+        </div>
+        <div id="project-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+            </div>
+        <div class="p-2 border-t border-slate-800">
+            <button onclick="createNewProject()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 rounded text-xs font-medium transition">+ New Project</button>
+        </div>
+    </div>
 
-        <div class="w-[30%] min-w-[300px] flex flex-col border-r border-slate-800 bg-slate-950">
-            <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4">
-                <div class="flex flex-col items-start">
-                    <div class="flex items-center gap-2 text-purple-400 mb-1">
-                        <span class="font-semibold text-sm">Appex Agent</span>
-                    </div>
-                    <div class="p-3 rounded-2xl rounded-tl-none bg-slate-800/50 border border-slate-700 shadow-sm text-sm text-slate-300">
-                        Ready to vibe code. Describe what you want, and I'll generate the files.
-                    </div>
-                </div>
+    <div class="w-[25%] min-w-[300px] flex flex-col border-r border-slate-800 bg-slate-950">
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 pb-10">
             </div>
 
-            <div class="p-4 border-t border-slate-800 bg-slate-900">
-                <div class="relative flex">
-                    <textarea id="prompt-input" rows="1" placeholder="e.g., Build a modern login screen" 
-                        class="w-full bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-3 pr-12 outline-none resize-none shadow-sm transition-all text-slate-200 placeholder-slate-500"></textarea>
-                    <button onclick="sendToAI()" class="absolute right-2 bottom-2 p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-transform active:scale-95">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                        </svg>
-                    </button>
-                </div>
+        <div class="p-4 border-t border-slate-800 bg-slate-900">
+            <div class="relative flex">
+                <textarea id="prompt-input" rows="1" placeholder="Describe the vibe..." 
+                    class="w-full bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-3 pr-12 outline-none resize-none shadow-sm transition-all text-slate-200 text-sm placeholder-slate-500"></textarea>
+                <button onclick="sendToAI()" class="absolute right-2 bottom-2 p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-transform active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                </button>
             </div>
         </div>
+    </div>
 
-        <div class="w-[18%] min-w-[150px] flex flex-col bg-black border-r border-slate-800">
-            <div class="p-3 border-b border-slate-800 flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Workspace</span>
+    <div class="w-[15%] min-w-[180px] flex flex-col bg-black border-r border-slate-800">
+        <div class="p-3 border-b border-slate-800 flex flex-col gap-2">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">GitHub Sync</span>
+            <div class="flex gap-1">
+                <input id="repo-input" type="text" placeholder="user/repo" class="w-full bg-slate-800 text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-blue-500 text-slate-200">
+                <button onclick="linkRepo()" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded text-xs text-white transition font-medium">Link</button>
             </div>
-            
-            <div id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1">
-                <div class="text-xs text-slate-600 italic p-2 text-center mt-4">No files generated yet.</div>
-            </div>
+            <div id="repo-status" class="text-[10px] text-slate-500 font-mono truncate hidden">Linked: none</div>
         </div>
+        <div id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
+    </div>
 
-        <div class="flex-1 flex flex-col bg-[#0d1117] relative">
-            
-            <div class="flex items-center justify-between p-3 border-b border-slate-800 bg-[#161b22]">
-                <div class="flex items-center gap-4">
-                    <div id="file-name-display" class="font-mono text-sm font-semibold text-slate-300">
-                        Waiting for files...
-                    </div>
-                    
-                    <div id="view-toggles" class="hidden flex bg-slate-900 rounded-lg p-1 border border-slate-700">
-                        <button id="btn-code" onclick="toggleView('code')" class="px-3 py-1 text-sm rounded-md bg-slate-700 text-white font-medium transition">Code</button>
-                        <button id="btn-preview" onclick="toggleView('preview')" class="px-3 py-1 text-sm rounded-md text-slate-400 hover:text-white transition">Preview</button>
-                    </div>
+    <div class="flex-1 flex flex-col bg-[#0d1117] relative">
+        <div class="flex items-center justify-between p-3 border-b border-slate-800 bg-[#161b22]">
+            <div class="flex items-center gap-4">
+                <div id="file-name-display" class="font-mono text-sm font-semibold text-slate-300">Waiting for files...</div>
+                
+                <div id="view-toggles" class="hidden flex bg-slate-900 rounded-lg p-1 border border-slate-700">
+                    <button id="btn-code" onclick="toggleView('code')" class="px-3 py-1 text-xs rounded-md bg-slate-700 text-white font-medium transition">Code</button>
+                    <button id="btn-preview" onclick="toggleView('preview')" class="px-3 py-1 text-xs rounded-md text-slate-400 hover:text-white transition">Preview</button>
                 </div>
+            </div>
 
-                <button onclick="downloadCode()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-3 py-1.5 rounded-md text-sm transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
+            <div class="flex gap-2">
+                <button onclick="pushToLinkedRepo()" class="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-md text-xs transition font-medium shadow-sm">
+                    Push
+                </button>
+                <button onclick="downloadCode()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-3 py-1.5 rounded-md text-xs transition">
                     Download
                 </button>
             </div>
+        </div>
+        
+        <div class="flex-1 relative overflow-auto p-4 flex flex-col">
+            <pre id="code-container" class="m-0 h-full"><code id="code-display" class="language-html text-sm font-mono h-full block text-slate-500">/* Workspace empty */</code></pre>
             
-            <div class="flex-1 relative overflow-auto p-4">
-                <pre id="code-container" class="m-0 h-full"><code id="code-display" class="language-html text-sm font-mono h-full block text-slate-500">/* Generated code will appear here */</code></pre>
-                <iframe id="preview-frame" class="w-full h-full bg-white rounded-md hidden border-none" sandbox="allow-scripts allow-forms allow-same-origin allow-modals"></iframe>
+            <iframe id="preview-frame" class="w-full h-full bg-white rounded-md hidden border-none" sandbox="allow-scripts allow-forms allow-same-origin allow-modals"></iframe>
+            
+            <div id="api-sandbox" class="hidden w-full h-full flex flex-col gap-4">
+                <div class="bg-slate-900 border border-slate-700 rounded-lg p-4 shadow-lg">
+                    <h3 class="text-xs font-bold text-yellow-400 uppercase mb-3 flex items-center gap-2">⚡ Live Serverless Sandbox (Auto-Executing)</h3>
+                    <div class="flex gap-2 mb-3">
+                        <select id="api-method" class="bg-slate-800 border border-slate-700 text-white text-xs rounded px-2 py-1 outline-none">
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                        </select>
+                        <input id="api-query" type="text" placeholder="?query=params (e.g. name=Appex)" class="flex-1 bg-slate-800 border border-slate-700 text-white text-xs rounded px-2 py-1 outline-none font-mono">
+                    </div>
+                    <textarea id="api-body" rows="3" placeholder='Request Body {"key": "value"}' class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded p-2 outline-none font-mono hidden"></textarea>
+                </div>
+                <div class="flex-1 bg-[#050505] border border-slate-700 rounded-lg p-4 flex flex-col shadow-inner">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase mb-2">Live Output</h3>
+                    <pre id="api-output" class="flex-1 text-xs font-mono text-green-400 overflow-auto">Awaiting execution...</pre>
+                </div>
             </div>
         </div>
-
     </div>
 
     <script>
-        const chatContainer = document.getElementById('chat-container');
-        const inputField = document.getElementById('prompt-input');
-        
-        const fileListContainer = document.getElementById('file-list');
-        const fileNameDisplay = document.getElementById('file-name-display');
-        
-        const codeDisplay = document.getElementById('code-display');
-        const codeContainer = document.getElementById('code-container');
-        
-        const previewFrame = document.getElementById('preview-frame');
-        const viewToggles = document.getElementById('view-toggles');
-        const btnCode = document.getElementById('btn-code');
-        const btnPreview = document.getElementById('btn-preview');
-
-        let files = {}; 
-        let currentActiveFile = null;
-
-        // Auto-resize textarea
-        inputField.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-            if(this.value === '') this.style.height = 'auto';
-        });
-
-        // Enter to send
-        inputField.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendToAI();
+        // --- GLOBAL STATE & MEMORY (LocalStorage) ---
+        let appState = JSON.parse(localStorage.getItem('appex_state')) || {
+            activeProjectId: 'default',
+            projects: {
+                'default': { name: 'Vibe Space 1', files: {}, chat: [], repo: '' }
             }
-        });
+        };
 
-        function appendMessage(role, text) {
-            const isUser = role === 'user';
-            
-            let chatText = typeof text === 'string' ? text : JSON.stringify(text);
-            if (!isUser) {
-                chatText = chatText.replace(/\((.*?)\)\s*([\s\S]*?)--end/gi, '\n[File generated: $1]\n');
-                chatText = chatText.replace(/```[\s\S]*?```/gi, '\n[Code generated in panel]\n');
-            }
-
-            const html = `
-                <div class="flex flex-col ${isUser ? 'items-end' : 'items-start'}">
-                    <div class="flex items-center gap-2 mb-1 ${isUser ? 'text-blue-400 flex-row-reverse' : 'text-purple-400'}">
-                        <span class="font-semibold text-sm">${isUser ? 'You' : 'Appex Agent'}</span>
-                    </div>
-                    <div class="p-3 rounded-2xl ${isUser ? 'bg-blue-600/10 border-blue-500/30 rounded-tr-none text-slate-200' : 'bg-slate-800/50 border-slate-700 rounded-tl-none text-slate-300'} shadow-sm text-sm whitespace-pre-wrap">${chatText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-                </div>
-            `;
-            chatContainer.insertAdjacentHTML('beforeend', html);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+        let githubToken = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('github_token');
+        if (githubToken) {
+            localStorage.setItem('github_token', githubToken);
+            window.history.replaceState({}, document.title, "/"); 
         }
 
-        function toggleView(view) {
-            if (view === 'preview') {
-                codeContainer.classList.add('hidden');
-                previewFrame.classList.remove('hidden');
-                if(files[currentActiveFile]) previewFrame.srcdoc = files[currentActiveFile].code;
-                
-                btnPreview.classList.add('bg-slate-700', 'text-white');
-                btnPreview.classList.remove('text-slate-400');
-                btnCode.classList.remove('bg-slate-700', 'text-white');
-                btnCode.classList.add('text-slate-400');
-            } else {
-                previewFrame.classList.add('hidden');
-                codeContainer.classList.remove('hidden');
+        const saveState = () => localStorage.setItem('appex_state', JSON.stringify(appState));
+        const getActiveProj = () => appState.projects[appState.activeProjectId];
 
-                btnCode.classList.add('bg-slate-700', 'text-white');
-                btnCode.classList.remove('text-slate-400');
-                btnPreview.classList.remove('bg-slate-700', 'text-white');
-                btnPreview.classList.add('text-slate-400');
+        // --- DOM ELEMENTS ---
+        const ui = {
+            projectList: document.getElementById('project-list'),
+            chatContainer: document.getElementById('chat-container'),
+            inputField: document.getElementById('prompt-input'),
+            fileList: document.getElementById('file-list'),
+            fileNameDisp: document.getElementById('file-name-display'),
+            codeContainer: document.getElementById('code-container'),
+            codeDisplay: document.getElementById('code-display'),
+            previewFrame: document.getElementById('preview-frame'),
+            apiSandbox: document.getElementById('api-sandbox'),
+            viewToggles: document.getElementById('view-toggles'),
+            btnCode: document.getElementById('btn-code'),
+            btnPreview: document.getElementById('btn-preview'),
+            repoInput: document.getElementById('repo-input'),
+            repoStatus: document.getElementById('repo-status'),
+            apiMethod: document.getElementById('api-method'),
+            apiBody: document.getElementById('api-body'),
+            apiQuery: document.getElementById('api-query'),
+            apiOutput: document.getElementById('api-output')
+        };
+
+        let currentActiveFile = null;
+
+        // --- AUTO-RUN EVENT LISTENERS ---
+        ui.inputField.addEventListener('input', function() {
+            this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';
+        });
+        ui.inputField.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
+        
+        // Triggers the sandbox instantly when you change inputs
+        ui.apiMethod.addEventListener('change', e => {
+            ui.apiBody.style.display = e.target.value === 'POST' ? 'block' : 'none';
+            runServerlessMock();
+        });
+        ui.apiQuery.addEventListener('input', runServerlessMock);
+        ui.apiBody.addEventListener('input', runServerlessMock);
+
+        // --- INITIALIZATION ---
+        function initApp() {
+            renderProjects();
+            loadProject(appState.activeProjectId);
+        }
+
+        // --- PROJECT MANAGEMENT ---
+        function renderProjects() {
+            ui.projectList.innerHTML = '';
+            for (const [id, proj] of Object.entries(appState.projects)) {
+                const isActive = id === appState.activeProjectId;
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left px-3 py-2 rounded-md text-xs truncate transition ${isActive ? 'bg-blue-600/20 text-blue-400 font-bold border border-blue-500/30' : 'text-slate-400 hover:bg-slate-800'}`;
+                btn.innerHTML = `📁 ${proj.name}`;
+                btn.onclick = () => loadProject(id);
+                ui.projectList.appendChild(btn);
+            }
+        }
+
+        function createNewProject() {
+            const id = 'proj_' + Date.now();
+            const count = Object.keys(appState.projects).length + 1;
+            appState.projects[id] = { name: `Vibe Space ${count}`, files: {}, chat: [], repo: '' };
+            loadProject(id);
+        }
+
+        function loadProject(id) {
+            appState.activeProjectId = id;
+            const proj = getActiveProj();
+            currentActiveFile = Object.keys(proj.files)[0] || null;
+            
+            ui.repoInput.value = proj.repo || '';
+            if(proj.repo) {
+                ui.repoStatus.textContent = `Linked: ${proj.repo}`;
+                ui.repoStatus.classList.remove('hidden');
+            } else {
+                ui.repoStatus.classList.add('hidden');
+            }
+
+            saveState();
+            renderProjects();
+            renderChatHistory();
+            renderFileList();
+            if (currentActiveFile) switchFile(currentActiveFile);
+            else resetCodeView();
+        }
+
+        // --- CHAT & MEMORY ---
+        function renderChatHistory() {
+            ui.chatContainer.innerHTML = '';
+            const chat = getActiveProj().chat;
+            if (chat.length === 0) {
+                ui.chatContainer.innerHTML = `<div class="p-3 rounded-2xl rounded-tl-none bg-slate-800/50 border border-slate-700 shadow-sm text-sm text-slate-300">Workspace ready. Let's code.</div>`;
+            } else {
+                chat.forEach(msg => drawChatBubble(msg.role, msg.text));
+            }
+            ui.chatContainer.scrollTop = ui.chatContainer.scrollHeight;
+        }
+
+        function drawChatBubble(role, text) {
+            const isUser = role === 'user';
+            let chatText = text.replace(/\((.*?)\)\s*([\s\S]*?)--end/gi, '\n[File generated: $1]\n');
+            const html = `<div class="flex flex-col ${isUser ? 'items-end' : 'items-start'} mb-4">
+                <div class="flex items-center gap-2 mb-1 ${isUser ? 'text-blue-400 flex-row-reverse' : 'text-purple-400'}">
+                    <span class="font-semibold text-xs">${isUser ? 'You' : 'Appex Agent'}</span>
+                </div>
+                <div class="p-3 rounded-2xl ${isUser ? 'bg-blue-600/10 border-blue-500/30 rounded-tr-none text-slate-200' : 'bg-slate-800/50 border-slate-700 rounded-tl-none text-slate-300'} shadow-sm text-sm whitespace-pre-wrap">${chatText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+            </div>`;
+            ui.chatContainer.insertAdjacentHTML('beforeend', html);
+            ui.chatContainer.scrollTop = ui.chatContainer.scrollHeight;
+        }
+
+        function appendMessage(role, text) {
+            getActiveProj().chat.push({ role, text });
+            saveState();
+            drawChatBubble(role, text);
+        }
+
+        // --- FILE SYSTEM & PREVIEW VIEWS ---
+        function toggleView(view) {
+            ui.codeContainer.classList.add('hidden');
+            ui.previewFrame.classList.add('hidden');
+            ui.apiSandbox.classList.add('hidden');
+            
+            ui.btnPreview.className = "px-3 py-1 text-xs rounded-md text-slate-400 hover:text-white transition";
+            ui.btnCode.className = "px-3 py-1 text-xs rounded-md text-slate-400 hover:text-white transition";
+
+            if (view === 'preview') {
+                ui.btnPreview.classList.add('bg-slate-700', 'text-white');
+                const isApi = currentActiveFile && currentActiveFile.startsWith('api/');
+                
+                if (isApi) {
+                    ui.apiSandbox.classList.remove('hidden');
+                } else {
+                    ui.previewFrame.classList.remove('hidden');
+                    if(getActiveProj().files[currentActiveFile]) ui.previewFrame.srcdoc = getActiveProj().files[currentActiveFile].code;
+                }
+            } else {
+                ui.codeContainer.classList.remove('hidden');
+                ui.btnCode.classList.add('bg-slate-700', 'text-white');
             }
         }
 
         function renderFileList() {
-            if(!fileListContainer) return;
-            
-            fileListContainer.innerHTML = '';
-            const fileNames = Object.keys(files);
-            
-            if(fileNames.length === 0) {
-                fileListContainer.innerHTML = `<div class="text-xs text-slate-600 italic p-2 text-center mt-4">No files generated yet.</div>`;
+            ui.fileList.innerHTML = '';
+            const files = getActiveProj().files;
+            if(Object.keys(files).length === 0) {
+                ui.fileList.innerHTML = `<div class="text-xs text-slate-600 italic p-2 text-center">No files yet.</div>`;
                 return;
             }
 
-            fileNames.forEach(fileName => {
+            for (const fileName in files) {
                 const isActive = fileName === currentActiveFile;
-                const baseClasses = "block w-full text-left px-3 py-2 rounded-md text-sm font-mono truncate transition-all cursor-pointer";
-                const activeClasses = "bg-yellow-400 text-black font-semibold shadow-sm";
-                const inactiveClasses = "text-slate-400 hover:bg-slate-800 hover:text-slate-200";
-
                 const btn = document.createElement('button');
-                btn.className = `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`;
+                btn.className = `block w-full text-left px-3 py-2 rounded-md text-xs font-mono truncate transition-all cursor-pointer ${isActive ? 'bg-yellow-400 text-black font-semibold shadow-sm' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`;
                 btn.textContent = fileName;
                 btn.onclick = () => switchFile(fileName);
-                
-                fileListContainer.appendChild(btn);
-            });
+                ui.fileList.appendChild(btn);
+            }
+        }
+
+        function resetCodeView() {
+            ui.fileNameDisp.textContent = "Waiting for files...";
+            ui.viewToggles.classList.add('hidden');
+            ui.codeDisplay.textContent = "/* Workspace empty */";
         }
 
         function switchFile(fileName) {
-            currentActiveFile = fileName;
+            currentActiveFile = fileName; 
             renderFileList(); 
-            
-            const fileData = files[fileName];
+            const fileData = getActiveProj().files[fileName];
             if(!fileData) return;
-
-            fileNameDisplay.textContent = fileName;
-
-            codeDisplay.removeAttribute('data-highlighted');
-            codeDisplay.className = `language-${fileData.lang} text-sm font-mono h-full block`;
-            codeDisplay.textContent = fileData.code;
-            hljs.highlightElement(codeDisplay);
-
-            if (fileData.lang === 'html') {
-                viewToggles.classList.remove('hidden');
-                toggleView('preview'); 
-            } else {
-                viewToggles.classList.add('hidden');
+            
+            ui.fileNameDisp.textContent = fileName;
+            ui.codeDisplay.removeAttribute('data-highlighted');
+            ui.codeDisplay.className = `language-${fileData.lang} text-sm font-mono h-full block`;
+            ui.codeDisplay.textContent = fileData.code;
+            hljs.highlightElement(ui.codeDisplay);
+            
+            // Show preview button if HTML, or if it's an API file (for Sandbox)
+            if (fileData.lang === 'html' || fileName.startsWith('api/')) { 
+                ui.viewToggles.classList.remove('hidden'); 
+                if (fileName.startsWith('api/')) {
+                    ui.btnPreview.textContent = "Sandbox";
+                    toggleView('preview');
+                    runServerlessMock(); // INSTANT AUTO-RUN TRIGGER
+                } else {
+                    ui.btnPreview.textContent = "Preview";
+                    toggleView('preview'); 
+                }
+            } else { 
+                ui.viewToggles.classList.add('hidden'); 
                 toggleView('code'); 
             }
         }
 
+        // --- VERCEL API MOCK EXECUTION (AUTO-COMPILES & RUNS) ---
+        async function runServerlessMock() {
+            if (!currentActiveFile || !currentActiveFile.startsWith('api/')) return;
+
+            ui.apiOutput.textContent = "Executing...";
+            ui.apiOutput.classList.replace('text-green-400', 'text-slate-400');
+            ui.apiOutput.classList.replace('text-red-400', 'text-slate-400');
+            
+            let rawCode = getActiveProj().files[currentActiveFile].code;
+            
+            try {
+                // 1. Compile TypeScript if necessary
+                if (currentActiveFile.endsWith('.ts')) {
+                    rawCode = ts.transpile(rawCode, { target: ts.ScriptTarget.ES2015 });
+                }
+
+                // 2. Wrap Vercel export to be executable locally
+                // Upgraded Regex handles "export default async function", "export default (req, res) =>", etc.
+                let executableCode = rawCode.replace(/export\s+default\s+/, "const __appexHandler = ");
+                executableCode += `\nreturn __appexHandler;`;
+                
+                const handler = new Function(executableCode)();
+                
+                // 3. Mock Vercel Request/Response Objects
+                let responseData = null;
+                let statusCode = 200;
+                
+                // Parse Query Params safely
+                let queryObj = {};
+                try { 
+                    const cleanQuery = ui.apiQuery.value.startsWith('?') ? ui.apiQuery.value.substring(1) : ui.apiQuery.value;
+                    queryObj = Object.fromEntries(new URLSearchParams(cleanQuery)); 
+                } catch(e) {}
+
+                // Parse Body safely
+                let bodyObj = {};
+                try {
+                    if (ui.apiMethod.value === 'POST' && ui.apiBody.value) bodyObj = JSON.parse(ui.apiBody.value);
+                } catch(e) {
+                    throw new Error("Invalid JSON in Request Body input.");
+                }
+
+                const reqMock = { method: ui.apiMethod.value, query: queryObj, body: bodyObj };
+                const resMock = {
+                    status: function(code) { statusCode = code; return this; },
+                    json: function(data) { responseData = data; return this; },
+                    send: function(data) { responseData = data; return this; }
+                };
+
+                // 4. Execute Function
+                await handler(reqMock, resMock);
+                
+                // 5. Output Result automatically
+                ui.apiOutput.classList.replace('text-slate-400', statusCode === 200 ? 'text-green-400' : 'text-yellow-400');
+                ui.apiOutput.textContent = `[Status: ${statusCode}]\n\n${JSON.stringify(responseData, null, 2)}`;
+
+            } catch(e) {
+                ui.apiOutput.classList.replace('text-slate-400', 'text-red-400');
+                ui.apiOutput.textContent = `Runtime Error:\n${e.message}\n\n(Note: Sandbox cannot execute native Node.js modules like 'fs' or 'path'.)`;
+            }
+        }
+
+        // --- AI GATEWAY & PROCESSING ---
         function processAIResponse(rawText) {
-            const text = typeof rawText === 'string' ? rawText : JSON.stringify(rawText, null, 2);
+            const proj = getActiveProj();
+            let text = typeof rawText === 'string' ? rawText : JSON.stringify(rawText);
             let foundFiles = false;
 
-            // Strategy A: Custom format
             const strictRegex = /\((.*?)\)\s*([\s\S]*?)--end/gi;
             let match;
             while ((match = strictRegex.exec(text)) !== null) {
                 foundFiles = true;
-                const fileName = match[1].trim() || `file_${Date.now()}.js`;
+                const fileName = match[1].trim();
                 const codeContent = match[2].trim();
                 const ext = fileName.split('.').pop().toLowerCase();
-                const lang = ext === 'js' ? 'javascript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : ext === 'json' ? 'json' : 'txt';
-
-                files[fileName] = { code: codeContent, lang: lang };
-                if(!currentActiveFile) currentActiveFile = fileName;
+                const lang = ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : 'json';
+                
+                proj.files[fileName] = { code: codeContent, lang: lang };
+                currentActiveFile = fileName; 
             }
 
-            // Strategy B: Fallback Markdown
-            if (!foundFiles) {
-                const mdRegex = /```(\w+)?\n([\s\S]*?)```/gi;
-                let mdMatch;
-                let counter = 1;
-                while ((mdMatch = mdRegex.exec(text)) !== null) {
-                    foundFiles = true;
-                    const lang = (mdMatch[1] || 'html').toLowerCase();
-                    const ext = lang === 'javascript' ? 'js' : lang;
-                    const fileName = `generated_${counter}.${ext}`;
-                    
-                    files[fileName] = { code: mdMatch[2].trim(), lang: lang };
-                    if(!currentActiveFile) currentActiveFile = fileName;
-                    counter++;
-                }
-            }
-
-            // Strategy C: Nuclear Fallback
-            if (!foundFiles && text.trim().length > 0) {
-                files["app.html"] = { code: text.trim(), lang: 'html' };
-                currentActiveFile = "app.html";
-            }
-
+            saveState();
             renderFileList();
             if (currentActiveFile) switchFile(currentActiveFile);
         }
 
-        function downloadCode() {
-            if (!currentActiveFile || !files[currentActiveFile]) return;
-            const fileData = files[currentActiveFile];
-            const blob = new Blob([fileData.code], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = currentActiveFile;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        }
+        async function sendToAI() {
+            const userPrompt = ui.inputField.value.trim();
+            if (!userPrompt) return;
 
-       async function sendToAI() {
-            const prompt = inputField.value.trim();
-            if (!prompt) return;
-
-            inputField.value = '';
-            inputField.style.height = 'auto';
-            appendMessage('user', prompt);
+            ui.inputField.value = '';
+            appendMessage('user', userPrompt);
 
             const loadingId = 'loading-' + Date.now();
-            chatContainer.insertAdjacentHTML('beforeend', `<div id="${loadingId}" class="flex flex-col items-start animate-pulse"><div class="p-3 rounded-2xl rounded-tl-none bg-slate-800/50 border border-slate-700 shadow-sm text-sm text-slate-500">Generating code...</div></div>`);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            ui.chatContainer.insertAdjacentHTML('beforeend', `<div id="${loadingId}" class="p-3 rounded-xl bg-slate-800 text-xs text-slate-500 animate-pulse w-fit">Thinking...</div>`);
+            ui.chatContainer.scrollTop = ui.chatContainer.scrollHeight;
+
+            const proj = getActiveProj();
             
-            if(fileListContainer) {
-                fileListContainer.innerHTML = `<div class="text-xs text-yellow-400 italic p-2 text-center mt-4 animate-pulse">Building files...</div>`;
+            // Build Context (Last 5 messages + Workspace files)
+            let promptWithContext = "--- MEMORY CONTEXT ---\n";
+            const recentChat = proj.chat.slice(-6, -1); 
+            recentChat.forEach(c => promptWithContext += `${c.role.toUpperCase()}: ${c.text}\n`);
+            
+            if (Object.keys(proj.files).length > 0) {
+                promptWithContext += "\n--- WORKSPACE STATE ---\n";
+                for (const [name, data] of Object.entries(proj.files)) {
+                    promptWithContext += `(${name})\n${data.code}\n--end\n\n`;
+                }
             }
+            promptWithContext += `\n--- CURRENT TASK ---\nUSER: ${userPrompt}\nSystem: Output FULL code using (filename.ext) format.`;
 
             try {
-                if (typeof window.dhruvs !== "function") throw new Error("Gateway script not loaded.");
-
-                // Call the gateway
-                const reply = await window.dhruvs("gateway-call", prompt, "google/gemini-3.0-pro", true);
-                
-                // 🛑 DIAGNOSTIC LOG: Press F12 to open your browser console and look for this!
-                console.log("RAW GATEWAY RESPONSE:", reply);
+                if (typeof window.dhruvs !== "function") throw new Error("Gateway offline.");
+                const reply = await window.dhruvs("gateway-call", promptWithContext, "mistral/codestral", true);
                 
                 document.getElementById(loadingId).remove();
-
-                // Safety check: Did the gateway return nothing?
-                if (!reply || (typeof reply === 'string' && reply.trim() === '')) {
-                    throw new Error("The gateway returned a completely blank response. (Check if google/gemini-3.0-pro is the correct model ID!)");
-                }
+                if (!reply || (typeof reply === 'string' && reply.trim() === '')) throw new Error("Blank response.");
                 
-                // If the gateway returns an object instead of a string (e.g. { message: "..." })
                 const replyText = typeof reply === 'string' ? reply : (reply.text || reply.message || JSON.stringify(reply));
-                
                 processAIResponse(replyText);
                 appendMessage('ai', replyText);
 
             } catch (err) {
                 document.getElementById(loadingId).remove();
                 appendMessage('ai', `⚠️ Error: ${err.message}`);
-                renderFileList(); 
             }
         }
+
+        initApp(); 
     </script>
 </body>
 </html>
