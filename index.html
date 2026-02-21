@@ -53,7 +53,7 @@
         </div>
     </div>
 
-   <div class="w-[15%] min-w-[180px] flex flex-col bg-black border-r border-slate-800">
+    <div class="w-[15%] min-w-[180px] flex flex-col bg-black border-r border-slate-800">
         <div class="p-3 border-b border-slate-800 flex flex-col gap-2">
             <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">GitHub Sync</span>
             
@@ -133,7 +133,7 @@
         }
 
         const saveState = () => localStorage.setItem('appex_state', JSON.stringify(appState));
-        const getActiveProj = () => appState.projects[appState.activeProjectId];
+        const getActiveProj = () => appState.projects[appState.activeProjectId] || appState.projects['default'];
 
         // --- DOM ELEMENTS ---
         const ui = {
@@ -165,7 +165,6 @@
         });
         ui.inputField.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
         
-        // Triggers the sandbox instantly when you change inputs
         ui.apiMethod.addEventListener('change', e => {
             ui.apiBody.style.display = e.target.value === 'POST' ? 'block' : 'none';
             runServerlessMock();
@@ -234,7 +233,15 @@
 
         function drawChatBubble(role, text) {
             const isUser = role === 'user';
-            let chatText = text.replace(/\((.*?)\)\s*([\s\S]*?)--end/gi, '\n[File generated: $1]\n');
+            
+            // Clean up UI parsing so code blocks aren't rendering inside chat
+            let chatText = typeof text === 'string' ? text : JSON.stringify(text);
+            if (!isUser) {
+                chatText = chatText.replace(/```[\s\S]*?```/gi, '\n[Code generated in File Explorer]\n');
+                chatText = chatText.replace(/\((.*?)\)\s*([\s\S]*?)(?:--end|$)/gi, '\n[File generated: $1]\n');
+                chatText = chatText.replace(/\[File generated: .*?\]\s*\[Code generated in File Explorer\]/gi, '[Code generated in panel]');
+            }
+
             const html = `<div class="flex flex-col ${isUser ? 'items-end' : 'items-start'} mb-4">
                 <div class="flex items-center gap-2 mb-1 ${isUser ? 'text-blue-400 flex-row-reverse' : 'text-purple-400'}">
                     <span class="font-semibold text-xs">${isUser ? 'You' : 'Appex Agent'}</span>
@@ -249,6 +256,118 @@
             getActiveProj().chat.push({ role, text });
             saveState();
             drawChatBubble(role, text);
+        }
+
+        // --- AI GATEWAY PARSER ---
+        function processAIResponse(rawText) {
+            const proj = getActiveProj();
+            let text = typeof rawText === 'string' ? rawText : JSON.stringify(rawText);
+            let foundFiles = false;
+
+            // Strategy 1: AI used Markdown Backticks (Codestral's favorite)
+            const mdRegex = /```(\w+)?\n([\s\S]*?)```/gi;
+            let mdMatch;
+            let counter = 1;
+
+            while ((mdMatch = mdRegex.exec(text)) !== null) {
+                foundFiles = true;
+                let rawLang = (mdMatch[1] || '').toLowerCase();
+                let content = mdMatch[2].trim();
+                let fileName = null;
+
+                // Check inside the backticks for (filename.ext)
+                const firstLineMatch = content.match(/^\((.*?)\)/);
+                if (firstLineMatch) {
+                    fileName = firstLineMatch[1].trim();
+                    content = content.replace(/^\((.*?)\)\n*/, '').trim(); 
+                } else {
+                    // Check right outside the backticks
+                    const textBefore = text.substring(0, mdMatch.index).trim();
+                    const beforeMatch = textBefore.match(/\(([^)]+\.[a-z]+)\)$/i);
+                    if (beforeMatch) {
+                        fileName = beforeMatch[1].trim();
+                    } else {
+                        // Total fallback
+                        const ext = rawLang === 'javascript' ? 'js' : rawLang === 'typescript' ? 'ts' : rawLang === 'html' ? 'html' : 'txt';
+                        fileName = currentActiveFile || `generated_${counter}.${ext}`;
+                        counter++;
+                    }
+                }
+
+                const ext = fileName.split('.').pop().toLowerCase();
+                const lang = ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : ext === 'json' ? 'json' : 'txt';
+                
+                proj.files[fileName] = { code: content, lang: lang };
+                currentActiveFile = fileName; 
+            }
+
+            // Strategy 2: AI used format but forgot backticks and maybe forgot --end
+            if (!foundFiles) {
+                const strictRegex = /\(([^)]+\.[a-z]+)\)\s*([\s\S]*?)(?:--end|$)/gi;
+                let strictMatch;
+                while ((strictMatch = strictRegex.exec(text)) !== null) {
+                    if (strictMatch[2].trim().length > 0) {
+                        foundFiles = true;
+                        const fileName = strictMatch[1].trim();
+                        let content = strictMatch[2].trim();
+                        
+                        const ext = fileName.split('.').pop().toLowerCase();
+                        const lang = ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : 'json';
+                        
+                        proj.files[fileName] = { code: content, lang: lang };
+                        currentActiveFile = fileName; 
+                    }
+                }
+            }
+
+            saveState();
+            renderFileList();
+            if (currentActiveFile) switchFile(currentActiveFile);
+        }
+
+        async function sendToAI() {
+            const userPrompt = ui.inputField.value.trim();
+            if (!userPrompt) return;
+
+            ui.inputField.value = '';
+            appendMessage('user', userPrompt);
+
+            const loadingId = 'loading-' + Date.now();
+            ui.chatContainer.insertAdjacentHTML('beforeend', `<div id="${loadingId}" class="p-3 rounded-xl bg-slate-800 text-xs text-slate-500 animate-pulse w-fit">Thinking...</div>`);
+            ui.chatContainer.scrollTop = ui.chatContainer.scrollHeight;
+
+            const proj = getActiveProj();
+            
+            let promptWithContext = "--- MEMORY CONTEXT ---\n";
+            const recentChat = proj.chat.slice(-6, -1); 
+            recentChat.forEach(c => promptWithContext += `${c.role.toUpperCase()}: ${c.text}\n`);
+            
+            if (Object.keys(proj.files).length > 0) {
+                promptWithContext += "\n--- WORKSPACE STATE ---\n";
+                for (const [name, data] of Object.entries(proj.files)) {
+                    promptWithContext += `(${name})\n${data.code}\n--end\n\n`;
+                }
+            }
+            promptWithContext += `\n--- CURRENT TASK ---\nUSER: ${userPrompt}\nSystem: Output FULL code using (filename.ext) format.`;
+
+            try {
+                if (typeof window.dhruvs !== "function") throw new Error("Gateway offline.");
+                
+                // MISTRAL / CODESTRAL Integration
+                const reply = await window.dhruvs("gateway-call", promptWithContext, "mistral/codestral", true);
+                
+                document.getElementById(loadingId).remove();
+                if (!reply || (typeof reply === 'string' && reply.trim() === '')) throw new Error("Blank response.");
+                
+                const replyText = typeof reply === 'string' ? reply : (reply.text || reply.message || JSON.stringify(reply));
+                processAIResponse(replyText);
+                appendMessage('ai', replyText);
+
+            } catch (err) {
+                const loader = document.getElementById(loadingId);
+                if(loader) loader.remove();
+                appendMessage('ai', `⚠️ Error: ${err.message}`);
+            }
         }
 
         // --- FILE SYSTEM & PREVIEW VIEWS ---
@@ -312,13 +431,12 @@
             ui.codeDisplay.textContent = fileData.code;
             hljs.highlightElement(ui.codeDisplay);
             
-            // Show preview button if HTML, or if it's an API file (for Sandbox)
             if (fileData.lang === 'html' || fileName.startsWith('api/')) { 
                 ui.viewToggles.classList.remove('hidden'); 
                 if (fileName.startsWith('api/')) {
                     ui.btnPreview.textContent = "Sandbox";
                     toggleView('preview');
-                    runServerlessMock(); // INSTANT AUTO-RUN TRIGGER
+                    runServerlessMock(); 
                 } else {
                     ui.btnPreview.textContent = "Preview";
                     toggleView('preview'); 
@@ -340,30 +458,31 @@
             let rawCode = getActiveProj().files[currentActiveFile].code;
             
             try {
-                // 1. Compile TypeScript if necessary
                 if (currentActiveFile.endsWith('.ts')) {
                     rawCode = ts.transpile(rawCode, { target: ts.ScriptTarget.ES2015 });
                 }
 
-                // 2. Wrap Vercel export to be executable locally
-                // Upgraded Regex handles "export default async function", "export default (req, res) =>", etc.
-                let executableCode = rawCode.replace(/export\s+default\s+/, "const __appexHandler = ");
+                let executableCode = rawCode.replace(/export\s+default\s+(?:async\s+)?(?:function\s*[a-zA-Z0-9_]*\s*)?(?:\([^)]*\)\s*=>\s*|\s*\([^)]*\)\s*\{)/, "const __appexHandler = async function(req, res) {");
+                
+                if (!executableCode.includes("const __appexHandler")) {
+                    executableCode = rawCode.replace(/module\.exports\s*=\s*(?:async\s+)?(?:function\s*[a-zA-Z0-9_]*\s*)?(?:\([^)]*\)\s*=>\s*|\s*\([^)]*\)\s*\{)/, "const __appexHandler = async function(req, res) {");
+                }
+
+                if (!executableCode.includes("const __appexHandler")) throw new Error("Could not find standard Vercel export default/module.exports function.");
+                
                 executableCode += `\nreturn __appexHandler;`;
                 
                 const handler = new Function(executableCode)();
                 
-                // 3. Mock Vercel Request/Response Objects
                 let responseData = null;
                 let statusCode = 200;
                 
-                // Parse Query Params safely
                 let queryObj = {};
                 try { 
                     const cleanQuery = ui.apiQuery.value.startsWith('?') ? ui.apiQuery.value.substring(1) : ui.apiQuery.value;
                     queryObj = Object.fromEntries(new URLSearchParams(cleanQuery)); 
                 } catch(e) {}
 
-                // Parse Body safely
                 let bodyObj = {};
                 try {
                     if (ui.apiMethod.value === 'POST' && ui.apiBody.value) bodyObj = JSON.parse(ui.apiBody.value);
@@ -378,84 +497,23 @@
                     send: function(data) { responseData = data; return this; }
                 };
 
-                // 4. Execute Function
                 await handler(reqMock, resMock);
                 
-                // 5. Output Result automatically
                 ui.apiOutput.classList.replace('text-slate-400', statusCode === 200 ? 'text-green-400' : 'text-yellow-400');
                 ui.apiOutput.textContent = `[Status: ${statusCode}]\n\n${JSON.stringify(responseData, null, 2)}`;
 
             } catch(e) {
                 ui.apiOutput.classList.replace('text-slate-400', 'text-red-400');
-                ui.apiOutput.textContent = `Runtime Error:\n${e.message}\n\n(Note: Sandbox cannot execute native Node.js modules like 'fs' or 'path'.)`;
+                ui.apiOutput.textContent = `Runtime Error:\n${e.message}`;
             }
         }
 
-        // --- AI GATEWAY & PROCESSING ---
-        function processAIResponse(rawText) {
-            const proj = getActiveProj();
-            let text = typeof rawText === 'string' ? rawText : JSON.stringify(rawText);
-            let foundFiles = false;
-
-            const strictRegex = /\((.*?)\)\s*([\s\S]*?)--end/gi;
-            let match;
-            while ((match = strictRegex.exec(text)) !== null) {
-                foundFiles = true;
-                const fileName = match[1].trim();
-                const codeContent = match[2].trim();
-                const ext = fileName.split('.').pop().toLowerCase();
-                const lang = ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : 'json';
-                
-                proj.files[fileName] = { code: codeContent, lang: lang };
-                currentActiveFile = fileName; 
-            }
-
-            saveState();
-            renderFileList();
-            if (currentActiveFile) switchFile(currentActiveFile);
-        }
-
-        async function sendToAI() {
-            const userPrompt = ui.inputField.value.trim();
-            if (!userPrompt) return;
-
-            ui.inputField.value = '';
-            appendMessage('user', userPrompt);
-
-            const loadingId = 'loading-' + Date.now();
-            ui.chatContainer.insertAdjacentHTML('beforeend', `<div id="${loadingId}" class="p-3 rounded-xl bg-slate-800 text-xs text-slate-500 animate-pulse w-fit">Thinking...</div>`);
-            ui.chatContainer.scrollTop = ui.chatContainer.scrollHeight;
-
-            const proj = getActiveProj();
-            
-            // Build Context (Last 5 messages + Workspace files)
-            let promptWithContext = "--- MEMORY CONTEXT ---\n";
-            const recentChat = proj.chat.slice(-6, -1); 
-            recentChat.forEach(c => promptWithContext += `${c.role.toUpperCase()}: ${c.text}\n`);
-            
-            if (Object.keys(proj.files).length > 0) {
-                promptWithContext += "\n--- WORKSPACE STATE ---\n";
-                for (const [name, data] of Object.entries(proj.files)) {
-                    promptWithContext += `(${name})\n${data.code}\n--end\n\n`;
-                }
-            }
-            promptWithContext += `\n--- CURRENT TASK ---\nUSER: ${userPrompt}\nSystem: Output FULL code using (filename.ext) format.`;
-
-            try {
-                if (typeof window.dhruvs !== "function") throw new Error("Gateway offline.");
-                const reply = await window.dhruvs("gateway-call", promptWithContext, "mistral/codestral", true);
-                
-                document.getElementById(loadingId).remove();
-                if (!reply || (typeof reply === 'string' && reply.trim() === '')) throw new Error("Blank response.");
-                
-                const replyText = typeof reply === 'string' ? reply : (reply.text || reply.message || JSON.stringify(reply));
-                processAIResponse(replyText);
-                appendMessage('ai', replyText);
-
-            } catch (err) {
-                document.getElementById(loadingId).remove();
-                appendMessage('ai', `⚠️ Error: ${err.message}`);
-            }
+        function downloadCode() {
+            if (!currentActiveFile || !getActiveProj().files[currentActiveFile]) return;
+            const blob = new Blob([getActiveProj().files[currentActiveFile].code], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = currentActiveFile;
+            document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
         }
 
         initApp(); 
