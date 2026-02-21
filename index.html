@@ -31,17 +31,14 @@
             <img src="https://ik.imagekit.io/migbb/vibe-coding.png?updatedAt=1771554953655" class="w-5 h-5 rounded">
             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Workspaces</span>
         </div>
-        <div id="project-list" class="flex-1 overflow-y-auto p-2 space-y-1">
-            </div>
+        <div id="project-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
         <div class="p-2 border-t border-slate-800">
             <button onclick="createNewProject()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 rounded text-xs font-medium transition">+ New Project</button>
         </div>
     </div>
 
     <div class="w-[25%] min-w-[300px] flex flex-col border-r border-slate-800 bg-slate-950">
-        <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 pb-10">
-            </div>
-
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 pb-10"></div>
         <div class="p-4 border-t border-slate-800 bg-slate-900">
             <div class="relative flex">
                 <textarea id="prompt-input" rows="1" placeholder="Describe the vibe..." 
@@ -54,20 +51,27 @@
     </div>
 
     <div class="w-[15%] min-w-[180px] flex flex-col bg-black border-r border-slate-800">
+        
         <div class="p-3 border-b border-slate-800 flex flex-col gap-2">
             <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">GitHub Sync</span>
-            
-            <button onclick="window.location.href='/api/auth/github'" class="w-full bg-[#24292e] hover:bg-[#1b1f23] text-white text-xs py-1.5 rounded border border-slate-700 font-medium transition flex items-center justify-center gap-2 mb-1">
+            <button id="btn-github-auth" onclick="window.location.href='/api/auth/github'" class="w-full bg-[#24292e] hover:bg-[#1b1f23] text-white text-xs py-1.5 rounded border border-slate-700 font-medium transition flex items-center justify-center gap-2 mb-1">
                 <svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
                 Connect Account
             </button>
-
             <div class="flex gap-1">
                 <input id="repo-input" type="text" placeholder="user/repo" class="w-full bg-slate-800 text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-blue-500 text-slate-200">
                 <button onclick="linkRepo()" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded text-xs text-white transition font-medium">Link</button>
             </div>
             <div id="repo-status" class="text-[10px] text-slate-500 font-mono truncate hidden">Linked: none</div>
         </div>
+
+        <div class="p-3 border-b border-slate-800 flex flex-col gap-2">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Supabase Data</span>
+            <input id="supa-url" type="text" placeholder="Project URL" class="w-full bg-slate-800 text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-green-500 text-slate-200">
+            <input id="supa-key" type="password" placeholder="Anon Key" class="w-full bg-slate-800 text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-green-500 text-slate-200">
+            <button onclick="saveSupabase()" id="btn-supa-save" class="w-full bg-green-600 hover:bg-green-500 text-white text-xs py-1.5 rounded transition font-medium shadow-sm">Link Database</button>
+        </div>
+
         <div id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
     </div>
 
@@ -94,7 +98,6 @@
         
         <div class="flex-1 relative overflow-auto p-4 flex flex-col">
             <pre id="code-container" class="m-0 h-full"><code id="code-display" class="language-html text-sm font-mono h-full block text-slate-500">/* Workspace empty */</code></pre>
-            
             <iframe id="preview-frame" class="w-full h-full bg-white rounded-md hidden border-none" sandbox="allow-scripts allow-forms allow-same-origin allow-modals"></iframe>
             
             <div id="api-sandbox" class="hidden w-full h-full flex flex-col gap-4">
@@ -105,7 +108,7 @@
                             <option value="GET">GET</option>
                             <option value="POST">POST</option>
                         </select>
-                        <input id="api-query" type="text" placeholder="?query=params (e.g. name=Appex)" class="flex-1 bg-slate-800 border border-slate-700 text-white text-xs rounded px-2 py-1 outline-none font-mono">
+                        <input id="api-query" type="text" placeholder="?query=params (e.g. id=1)" class="flex-1 bg-slate-800 border border-slate-700 text-white text-xs rounded px-2 py-1 outline-none font-mono">
                     </div>
                     <textarea id="api-body" rows="3" placeholder='Request Body {"key": "value"}' class="w-full bg-slate-800 border border-slate-700 text-white text-xs rounded p-2 outline-none font-mono hidden"></textarea>
                 </div>
@@ -118,13 +121,14 @@
     </div>
 
     <script>
-        // --- GLOBAL STATE & MEMORY (LocalStorage) ---
+        // --- GLOBAL STATE & MEMORY ---
         let appState = JSON.parse(localStorage.getItem('appex_state')) || {
             activeProjectId: 'default',
-            projects: {
-                'default': { name: 'Vibe Space 1', files: {}, chat: [], repo: '' }
-            }
+            projects: { 'default': { name: 'Vibe Space 1', files: {}, chat: [], repo: '' } },
+            supabase: { url: '', key: '' }
         };
+
+        if (!appState.supabase) appState.supabase = { url: '', key: '' };
 
         let githubToken = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('github_token');
         if (githubToken) {
@@ -135,7 +139,6 @@
         const saveState = () => localStorage.setItem('appex_state', JSON.stringify(appState));
         const getActiveProj = () => appState.projects[appState.activeProjectId] || appState.projects['default'];
 
-        // --- DOM ELEMENTS ---
         const ui = {
             projectList: document.getElementById('project-list'),
             chatContainer: document.getElementById('chat-container'),
@@ -159,26 +162,48 @@
 
         let currentActiveFile = null;
 
-        // --- AUTO-RUN EVENT LISTENERS ---
-        ui.inputField.addEventListener('input', function() {
-            this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';
-        });
+        ui.inputField.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
         ui.inputField.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
         
-        ui.apiMethod.addEventListener('change', e => {
-            ui.apiBody.style.display = e.target.value === 'POST' ? 'block' : 'none';
-            runServerlessMock();
-        });
+        ui.apiMethod.addEventListener('change', e => { ui.apiBody.style.display = e.target.value === 'POST' ? 'block' : 'none'; runServerlessMock(); });
         ui.apiQuery.addEventListener('input', runServerlessMock);
         ui.apiBody.addEventListener('input', runServerlessMock);
 
-        // --- INITIALIZATION ---
         function initApp() {
             renderProjects();
             loadProject(appState.activeProjectId);
+            checkIntegrationsStatus();
         }
 
-        // --- PROJECT MANAGEMENT ---
+        function checkIntegrationsStatus() {
+            if (githubToken) {
+                const ghBtn = document.getElementById('btn-github-auth');
+                ghBtn.innerHTML = `✓ GitHub Linked`;
+                ghBtn.classList.replace('bg-[#24292e]', 'bg-green-600/20');
+                ghBtn.classList.replace('hover:bg-[#1b1f23]', 'hover:bg-green-600/30');
+                ghBtn.classList.replace('text-white', 'text-green-400');
+                ghBtn.classList.replace('border-slate-700', 'border-green-500/30');
+            }
+            if (appState.supabase && appState.supabase.url) {
+                document.getElementById('supa-url').value = appState.supabase.url;
+                document.getElementById('supa-key').value = appState.supabase.key;
+                const supaBtn = document.getElementById('btn-supa-save');
+                supaBtn.textContent = "✓ Supabase Linked";
+                supaBtn.classList.replace('bg-green-600', 'bg-slate-700');
+                supaBtn.classList.replace('hover:bg-green-500', 'hover:bg-slate-600');
+            }
+        }
+
+        function saveSupabase() {
+            const url = document.getElementById('supa-url').value.trim();
+            const key = document.getElementById('supa-key').value.trim();
+            if (!url || !key) return alert("Please provide both URL and Key!");
+            appState.supabase = { url, key };
+            saveState();
+            checkIntegrationsStatus();
+            appendMessage('ai', "✅ Supabase credentials saved! They will automatically inject via `vercel.json` when you Push.");
+        }
+
         function renderProjects() {
             ui.projectList.innerHTML = '';
             for (const [id, proj] of Object.entries(appState.projects)) {
@@ -207,41 +232,28 @@
             if(proj.repo) {
                 ui.repoStatus.textContent = `Linked: ${proj.repo}`;
                 ui.repoStatus.classList.remove('hidden');
-            } else {
-                ui.repoStatus.classList.add('hidden');
-            }
+            } else { ui.repoStatus.classList.add('hidden'); }
 
-            saveState();
-            renderProjects();
-            renderChatHistory();
-            renderFileList();
-            if (currentActiveFile) switchFile(currentActiveFile);
-            else resetCodeView();
+            saveState(); renderProjects(); renderChatHistory(); renderFileList();
+            if (currentActiveFile) switchFile(currentActiveFile); else resetCodeView();
         }
 
-        // --- CHAT & MEMORY ---
         function renderChatHistory() {
             ui.chatContainer.innerHTML = '';
             const chat = getActiveProj().chat;
-            if (chat.length === 0) {
-                ui.chatContainer.innerHTML = `<div class="p-3 rounded-2xl rounded-tl-none bg-slate-800/50 border border-slate-700 shadow-sm text-sm text-slate-300">Workspace ready. Let's code.</div>`;
-            } else {
-                chat.forEach(msg => drawChatBubble(msg.role, msg.text));
-            }
+            if (chat.length === 0) ui.chatContainer.innerHTML = `<div class="p-3 rounded-2xl rounded-tl-none bg-slate-800/50 border border-slate-700 shadow-sm text-sm text-slate-300">Workspace ready. Let's code.</div>`;
+            else chat.forEach(msg => drawChatBubble(msg.role, msg.text));
             ui.chatContainer.scrollTop = ui.chatContainer.scrollHeight;
         }
 
         function drawChatBubble(role, text) {
             const isUser = role === 'user';
-            
-            // Clean up UI parsing so code blocks aren't rendering inside chat
             let chatText = typeof text === 'string' ? text : JSON.stringify(text);
             if (!isUser) {
                 chatText = chatText.replace(/```[\s\S]*?```/gi, '\n[Code generated in File Explorer]\n');
                 chatText = chatText.replace(/\((.*?)\)\s*([\s\S]*?)(?:--end|$)/gi, '\n[File generated: $1]\n');
                 chatText = chatText.replace(/\[File generated: .*?\]\s*\[Code generated in File Explorer\]/gi, '[Code generated in panel]');
             }
-
             const html = `<div class="flex flex-col ${isUser ? 'items-end' : 'items-start'} mb-4">
                 <div class="flex items-center gap-2 mb-1 ${isUser ? 'text-blue-400 flex-row-reverse' : 'text-purple-400'}">
                     <span class="font-semibold text-xs">${isUser ? 'You' : 'Appex Agent'}</span>
@@ -258,13 +270,11 @@
             drawChatBubble(role, text);
         }
 
-        // --- AI GATEWAY PARSER ---
         function processAIResponse(rawText) {
             const proj = getActiveProj();
             let text = typeof rawText === 'string' ? rawText : JSON.stringify(rawText);
             let foundFiles = false;
 
-            // Strategy 1: AI used Markdown Backticks (Codestral's favorite)
             const mdRegex = /```(\w+)?\n([\s\S]*?)```/gi;
             let mdMatch;
             let counter = 1;
@@ -275,33 +285,26 @@
                 let content = mdMatch[2].trim();
                 let fileName = null;
 
-                // Check inside the backticks for (filename.ext)
                 const firstLineMatch = content.match(/^\((.*?)\)/);
                 if (firstLineMatch) {
                     fileName = firstLineMatch[1].trim();
                     content = content.replace(/^\((.*?)\)\n*/, '').trim(); 
                 } else {
-                    // Check right outside the backticks
                     const textBefore = text.substring(0, mdMatch.index).trim();
                     const beforeMatch = textBefore.match(/\(([^)]+\.[a-z]+)\)$/i);
-                    if (beforeMatch) {
-                        fileName = beforeMatch[1].trim();
-                    } else {
-                        // Total fallback
+                    if (beforeMatch) fileName = beforeMatch[1].trim();
+                    else {
                         const ext = rawLang === 'javascript' ? 'js' : rawLang === 'typescript' ? 'ts' : rawLang === 'html' ? 'html' : 'txt';
                         fileName = currentActiveFile || `generated_${counter}.${ext}`;
                         counter++;
                     }
                 }
-
                 const ext = fileName.split('.').pop().toLowerCase();
                 const lang = ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : ext === 'json' ? 'json' : 'txt';
-                
                 proj.files[fileName] = { code: content, lang: lang };
                 currentActiveFile = fileName; 
             }
 
-            // Strategy 2: AI used format but forgot backticks and maybe forgot --end
             if (!foundFiles) {
                 const strictRegex = /\(([^)]+\.[a-z]+)\)\s*([\s\S]*?)(?:--end|$)/gi;
                 let strictMatch;
@@ -310,18 +313,14 @@
                         foundFiles = true;
                         const fileName = strictMatch[1].trim();
                         let content = strictMatch[2].trim();
-                        
                         const ext = fileName.split('.').pop().toLowerCase();
                         const lang = ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : 'json';
-                        
                         proj.files[fileName] = { code: content, lang: lang };
                         currentActiveFile = fileName; 
                     }
                 }
             }
-
-            saveState();
-            renderFileList();
+            saveState(); renderFileList();
             if (currentActiveFile) switchFile(currentActiveFile);
         }
 
@@ -329,40 +328,37 @@
             const userPrompt = ui.inputField.value.trim();
             if (!userPrompt) return;
 
-            ui.inputField.value = '';
-            appendMessage('user', userPrompt);
+            ui.inputField.value = ''; appendMessage('user', userPrompt);
 
             const loadingId = 'loading-' + Date.now();
             ui.chatContainer.insertAdjacentHTML('beforeend', `<div id="${loadingId}" class="p-3 rounded-xl bg-slate-800 text-xs text-slate-500 animate-pulse w-fit">Thinking...</div>`);
             ui.chatContainer.scrollTop = ui.chatContainer.scrollHeight;
 
             const proj = getActiveProj();
-            
             let promptWithContext = "--- MEMORY CONTEXT ---\n";
             const recentChat = proj.chat.slice(-6, -1); 
             recentChat.forEach(c => promptWithContext += `${c.role.toUpperCase()}: ${c.text}\n`);
             
             if (Object.keys(proj.files).length > 0) {
                 promptWithContext += "\n--- WORKSPACE STATE ---\n";
-                for (const [name, data] of Object.entries(proj.files)) {
-                    promptWithContext += `(${name})\n${data.code}\n--end\n\n`;
-                }
+                for (const [name, data] of Object.entries(proj.files)) promptWithContext += `(${name})\n${data.code}\n--end\n\n`;
             }
             promptWithContext += `\n--- CURRENT TASK ---\nUSER: ${userPrompt}\nSystem: Output FULL code using (filename.ext) format.`;
 
+            if (appState.supabase && appState.supabase.url) {
+                promptWithContext += `\nSystem Directive: Supabase is LINKED. Use \`process.env.SUPABASE_URL\` and \`process.env.SUPABASE_ANON_KEY\`. Do NOT hardcode the raw URL.`;
+            } else {
+                promptWithContext += `\nSystem Directive: Supabase NOT linked. If asked for DB, remind user to enter URL/Key in the sidebar.`;
+            }
+
             try {
                 if (typeof window.dhruvs !== "function") throw new Error("Gateway offline.");
-                
-                // MISTRAL / CODESTRAL Integration
                 const reply = await window.dhruvs("gateway-call", promptWithContext, "mistral/codestral", true);
-                
                 document.getElementById(loadingId).remove();
                 if (!reply || (typeof reply === 'string' && reply.trim() === '')) throw new Error("Blank response.");
-                
                 const replyText = typeof reply === 'string' ? reply : (reply.text || reply.message || JSON.stringify(reply));
                 processAIResponse(replyText);
                 appendMessage('ai', replyText);
-
             } catch (err) {
                 const loader = document.getElementById(loadingId);
                 if(loader) loader.remove();
@@ -370,58 +366,152 @@
             }
         }
 
-        // --- FILE SYSTEM & PREVIEW VIEWS ---
-        function toggleView(view) {
-            ui.codeContainer.classList.add('hidden');
-            ui.previewFrame.classList.add('hidden');
-            ui.apiSandbox.classList.add('hidden');
+        // --- THE INTERCEPTOR (For Push and Download) ---
+        function getSanitizedFiles() {
+            const proj = getActiveProj();
+            let safeWorkspace = {};
+
+            for (const [fileName, fileData] of Object.entries(proj.files)) {
+                let cleanCode = fileData.code;
+                // If the AI accidentally hardcoded the keys, forcefully scrub them and replace with ENV calls!
+                if (appState.supabase && appState.supabase.url) {
+                    cleanCode = cleanCode.replaceAll(`'${appState.supabase.url}'`, 'process.env.SUPABASE_URL');
+                    cleanCode = cleanCode.replaceAll(`"${appState.supabase.url}"`, 'process.env.SUPABASE_URL');
+                    cleanCode = cleanCode.replaceAll(appState.supabase.url, 'process.env.SUPABASE_URL');
+                    cleanCode = cleanCode.replaceAll(`'${appState.supabase.key}'`, 'process.env.SUPABASE_ANON_KEY');
+                    cleanCode = cleanCode.replaceAll(`"${appState.supabase.key}"`, 'process.env.SUPABASE_ANON_KEY');
+                    cleanCode = cleanCode.replaceAll(appState.supabase.key, 'process.env.SUPABASE_ANON_KEY');
+                }
+                safeWorkspace[fileName] = { ...fileData, code: cleanCode };
+            }
+
+            // Automatically inject vercel.json if Supabase is linked
+            if (appState.supabase && appState.supabase.url) {
+                safeWorkspace['vercel.json'] = {
+                    code: JSON.stringify({
+                        env: {
+                            SUPABASE_URL: appState.supabase.url,
+                            SUPABASE_ANON_KEY: appState.supabase.key
+                        }
+                    }, null, 2),
+                    lang: 'json'
+                };
+            }
+            return safeWorkspace;
+        }
+
+        // --- GITHUB LINK & PUSH ---
+        async function linkRepo() {
+            const repoPath = document.getElementById('repo-input').value.trim();
+            if(!repoPath) return;
+            if(!githubToken) return alert("⚠️ Please click 'Connect Account' first!");
+
+            ui.fileList.innerHTML = `<div class="text-xs text-yellow-400 italic p-2 text-center mt-4 animate-pulse">Fetching repo...</div>`;
             
+            try {
+                const res = await fetch(`https://api.github.com/repos/${repoPath}/contents`, { headers: { 'Authorization': `token ${githubToken}` } });
+                if (!res.ok) throw new Error("Repo not found or private.");
+                
+                const items = await res.json();
+                const proj = getActiveProj();
+                proj.files = {}; 
+                proj.repo = repoPath; 
+                
+                for (const item of items) {
+                    if (item.type === 'file' && (item.name.endsWith('.html') || item.name.endsWith('.js') || item.name.endsWith('.ts') || item.name.endsWith('.css') || item.name.endsWith('.json'))) {
+                        const fileRes = await fetch(item.download_url);
+                        const content = await fileRes.text();
+                        const ext = item.name.split('.').pop().toLowerCase();
+                        const lang = ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : 'json';
+                        proj.files[item.name] = { code: content, lang: lang };
+                        if(!currentActiveFile) currentActiveFile = item.name;
+                    }
+                }
+                saveState();
+                appendMessage('ai', `✅ Linked to repository: ${repoPath}`);
+                loadProject(appState.activeProjectId); // Refreshes UI completely
+            } catch (error) {
+                appendMessage('ai', `⚠️ Link Failed: ${error.message}`);
+                renderFileList();
+            }
+        }
+
+        async function pushToLinkedRepo() {
+            const proj = getActiveProj();
+            if (!githubToken) return alert("⚠️ Connect GitHub Account first!");
+            if (!proj.repo) return alert("⚠️ Please Link a repo in the sidebar first!");
+            
+            const sanitizedWorkspace = getSanitizedFiles();
+            if (Object.keys(sanitizedWorkspace).length === 0) return alert("No files to push!");
+
+            const loadingId = 'loading-' + Date.now();
+            ui.chatContainer.insertAdjacentHTML('beforeend', `<div id="${loadingId}" class="p-3 rounded-xl bg-slate-800 text-xs text-yellow-400 animate-pulse w-fit">Deploying securely to GitHub...</div>`);
+            ui.chatContainer.scrollTop = ui.chatContainer.scrollHeight;
+
+            try {
+                const res = await fetch('/api/github/push', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: githubToken,
+                        repo: proj.repo,
+                        files: sanitizedWorkspace,
+                        message: "Secure Push via Appex Vibe Coder"
+                    })
+                });
+                
+                const data = await res.json();
+                document.getElementById(loadingId).remove();
+                if (data.error) throw new Error(data.error);
+                appendMessage('ai', `🚀 Successfully pushed to [${proj.repo}](https://github.com/${proj.repo})! \n(Keys were safely injected into vercel.json)`);
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                appendMessage('ai', `⚠️ Push Failed: ${err.message}`);
+            }
+        }
+
+        function downloadCode() {
+            const sanitizedWorkspace = getSanitizedFiles();
+            if (!currentActiveFile || !sanitizedWorkspace[currentActiveFile]) return;
+            
+            // Downloads the currently viewed file with keys scrubbed!
+            const blob = new Blob([sanitizedWorkspace[currentActiveFile].code], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = currentActiveFile;
+            document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
+        }
+
+        function toggleView(view) {
+            ui.codeContainer.classList.add('hidden'); ui.previewFrame.classList.add('hidden'); ui.apiSandbox.classList.add('hidden');
             ui.btnPreview.className = "px-3 py-1 text-xs rounded-md text-slate-400 hover:text-white transition";
             ui.btnCode.className = "px-3 py-1 text-xs rounded-md text-slate-400 hover:text-white transition";
 
             if (view === 'preview') {
                 ui.btnPreview.classList.add('bg-slate-700', 'text-white');
-                const isApi = currentActiveFile && currentActiveFile.startsWith('api/');
-                
-                if (isApi) {
-                    ui.apiSandbox.classList.remove('hidden');
-                } else {
+                if (currentActiveFile && currentActiveFile.startsWith('api/')) ui.apiSandbox.classList.remove('hidden');
+                else {
                     ui.previewFrame.classList.remove('hidden');
                     if(getActiveProj().files[currentActiveFile]) ui.previewFrame.srcdoc = getActiveProj().files[currentActiveFile].code;
                 }
             } else {
-                ui.codeContainer.classList.remove('hidden');
-                ui.btnCode.classList.add('bg-slate-700', 'text-white');
+                ui.codeContainer.classList.remove('hidden'); ui.btnCode.classList.add('bg-slate-700', 'text-white');
             }
         }
 
         function renderFileList() {
-            ui.fileList.innerHTML = '';
-            const files = getActiveProj().files;
-            if(Object.keys(files).length === 0) {
-                ui.fileList.innerHTML = `<div class="text-xs text-slate-600 italic p-2 text-center">No files yet.</div>`;
-                return;
-            }
-
+            ui.fileList.innerHTML = ''; const files = getActiveProj().files;
+            if(Object.keys(files).length === 0) return ui.fileList.innerHTML = `<div class="text-xs text-slate-600 italic p-2 text-center">No files yet.</div>`;
             for (const fileName in files) {
                 const isActive = fileName === currentActiveFile;
                 const btn = document.createElement('button');
                 btn.className = `block w-full text-left px-3 py-2 rounded-md text-xs font-mono truncate transition-all cursor-pointer ${isActive ? 'bg-yellow-400 text-black font-semibold shadow-sm' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`;
-                btn.textContent = fileName;
-                btn.onclick = () => switchFile(fileName);
+                btn.textContent = fileName; btn.onclick = () => switchFile(fileName);
                 ui.fileList.appendChild(btn);
             }
         }
 
-        function resetCodeView() {
-            ui.fileNameDisp.textContent = "Waiting for files...";
-            ui.viewToggles.classList.add('hidden');
-            ui.codeDisplay.textContent = "/* Workspace empty */";
-        }
-
         function switchFile(fileName) {
-            currentActiveFile = fileName; 
-            renderFileList(); 
+            currentActiveFile = fileName; renderFileList(); 
             const fileData = getActiveProj().files[fileName];
             if(!fileData) return;
             
@@ -434,23 +524,15 @@
             if (fileData.lang === 'html' || fileName.startsWith('api/')) { 
                 ui.viewToggles.classList.remove('hidden'); 
                 if (fileName.startsWith('api/')) {
-                    ui.btnPreview.textContent = "Sandbox";
-                    toggleView('preview');
-                    runServerlessMock(); 
+                    ui.btnPreview.textContent = "Sandbox"; toggleView('preview'); runServerlessMock(); 
                 } else {
-                    ui.btnPreview.textContent = "Preview";
-                    toggleView('preview'); 
+                    ui.btnPreview.textContent = "Preview"; toggleView('preview'); 
                 }
-            } else { 
-                ui.viewToggles.classList.add('hidden'); 
-                toggleView('code'); 
-            }
+            } else { ui.viewToggles.classList.add('hidden'); toggleView('code'); }
         }
 
-        // --- VERCEL API MOCK EXECUTION (AUTO-COMPILES & RUNS) ---
         async function runServerlessMock() {
             if (!currentActiveFile || !currentActiveFile.startsWith('api/')) return;
-
             ui.apiOutput.textContent = "Executing...";
             ui.apiOutput.classList.replace('text-green-400', 'text-slate-400');
             ui.apiOutput.classList.replace('text-red-400', 'text-slate-400');
@@ -458,24 +540,17 @@
             let rawCode = getActiveProj().files[currentActiveFile].code;
             
             try {
-                if (currentActiveFile.endsWith('.ts')) {
-                    rawCode = ts.transpile(rawCode, { target: ts.ScriptTarget.ES2015 });
-                }
-
+                if (currentActiveFile.endsWith('.ts')) rawCode = ts.transpile(rawCode, { target: ts.ScriptTarget.ES2015 });
                 let executableCode = rawCode.replace(/export\s+default\s+(?:async\s+)?(?:function\s*[a-zA-Z0-9_]*\s*)?(?:\([^)]*\)\s*=>\s*|\s*\([^)]*\)\s*\{)/, "const __appexHandler = async function(req, res) {");
-                
-                if (!executableCode.includes("const __appexHandler")) {
-                    executableCode = rawCode.replace(/module\.exports\s*=\s*(?:async\s+)?(?:function\s*[a-zA-Z0-9_]*\s*)?(?:\([^)]*\)\s*=>\s*|\s*\([^)]*\)\s*\{)/, "const __appexHandler = async function(req, res) {");
-                }
-
+                if (!executableCode.includes("const __appexHandler")) executableCode = rawCode.replace(/module\.exports\s*=\s*(?:async\s+)?(?:function\s*[a-zA-Z0-9_]*\s*)?(?:\([^)]*\)\s*=>\s*|\s*\([^)]*\)\s*\{)/, "const __appexHandler = async function(req, res) {");
                 if (!executableCode.includes("const __appexHandler")) throw new Error("Could not find standard Vercel export default/module.exports function.");
                 
-                executableCode += `\nreturn __appexHandler;`;
+                // INJECT REAL KEYS FOR LOCAL TESTING
+                const envInject = `const process = { env: { SUPABASE_URL: '${appState.supabase?.url || ''}', SUPABASE_ANON_KEY: '${appState.supabase?.key || ''}' } };\n`;
+                executableCode = envInject + executableCode + `\nreturn __appexHandler;`;
                 
                 const handler = new Function(executableCode)();
-                
-                let responseData = null;
-                let statusCode = 200;
+                let responseData = null; let statusCode = 200;
                 
                 let queryObj = {};
                 try { 
@@ -484,36 +559,20 @@
                 } catch(e) {}
 
                 let bodyObj = {};
-                try {
-                    if (ui.apiMethod.value === 'POST' && ui.apiBody.value) bodyObj = JSON.parse(ui.apiBody.value);
-                } catch(e) {
-                    throw new Error("Invalid JSON in Request Body input.");
-                }
+                try { if (ui.apiMethod.value === 'POST' && ui.apiBody.value) bodyObj = JSON.parse(ui.apiBody.value); } catch(e) { throw new Error("Invalid JSON Body."); }
 
-                const reqMock = { method: ui.apiMethod.value, query: queryObj, body: bodyObj };
-                const resMock = {
+                await handler({ method: ui.apiMethod.value, query: queryObj, body: bodyObj }, {
                     status: function(code) { statusCode = code; return this; },
                     json: function(data) { responseData = data; return this; },
                     send: function(data) { responseData = data; return this; }
-                };
-
-                await handler(reqMock, resMock);
+                });
                 
                 ui.apiOutput.classList.replace('text-slate-400', statusCode === 200 ? 'text-green-400' : 'text-yellow-400');
                 ui.apiOutput.textContent = `[Status: ${statusCode}]\n\n${JSON.stringify(responseData, null, 2)}`;
-
             } catch(e) {
                 ui.apiOutput.classList.replace('text-slate-400', 'text-red-400');
                 ui.apiOutput.textContent = `Runtime Error:\n${e.message}`;
             }
-        }
-
-        function downloadCode() {
-            if (!currentActiveFile || !getActiveProj().files[currentActiveFile]) return;
-            const blob = new Blob([getActiveProj().files[currentActiveFile].code], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = currentActiveFile;
-            document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
         }
 
         initApp(); 
