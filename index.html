@@ -99,26 +99,26 @@
         const chatContainer = document.getElementById('chat-container');
         const inputField = document.getElementById('prompt-input');
         
+        const fileListContainer = document.getElementById('file-list');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        
         const codeDisplay = document.getElementById('code-display');
         const codeContainer = document.getElementById('code-container');
-        const fileNameDisplay = document.getElementById('file-name');
         
         const previewFrame = document.getElementById('preview-frame');
         const viewToggles = document.getElementById('view-toggles');
         const btnCode = document.getElementById('btn-code');
         const btnPreview = document.getElementById('btn-preview');
 
-        let currentCode = "";
-        let currentLanguage = "html";
+        let files = {}; 
+        let currentActiveFile = null;
 
-        // Auto-resize textarea
         inputField.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
             if(this.value === '') this.style.height = 'auto';
         });
 
-        // Allow 'Enter' to send, 'Shift+Enter' for new line
         inputField.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -128,10 +128,12 @@
 
         function appendMessage(role, text) {
             const isUser = role === 'user';
-            // Simple clean up to remove the code block from the chat UI so the chat looks cleaner
-            let chatText = text;
+            
+            // Clean up the chat UI
+            let chatText = typeof text === 'string' ? text : JSON.stringify(text);
             if (!isUser) {
-                chatText = chatText.replace(/\((.*?)\)\s*([\s\S]*?)--end/gi, '[Code generated in panel]');
+                chatText = chatText.replace(/\((.*?)\)\s*([\s\S]*?)--end/gi, '\n[File generated: $1]\n');
+                chatText = chatText.replace(/```[\s\S]*?```/gi, '\n[Code generated in panel]\n');
             }
 
             const html = `
@@ -150,74 +152,127 @@
             if (view === 'preview') {
                 codeContainer.classList.add('hidden');
                 previewFrame.classList.remove('hidden');
-                previewFrame.srcdoc = currentCode;
-
-                btnPreview.classList.add('bg-slate-700', 'text-white', 'font-medium');
+                if(files[currentActiveFile]) previewFrame.srcdoc = files[currentActiveFile].code;
+                
+                btnPreview.classList.add('bg-slate-700', 'text-white');
                 btnPreview.classList.remove('text-slate-400');
-                btnCode.classList.remove('bg-slate-700', 'text-white', 'font-medium');
+                btnCode.classList.remove('bg-slate-700', 'text-white');
                 btnCode.classList.add('text-slate-400');
             } else {
                 previewFrame.classList.add('hidden');
                 codeContainer.classList.remove('hidden');
 
-                btnCode.classList.add('bg-slate-700', 'text-white', 'font-medium');
+                btnCode.classList.add('bg-slate-700', 'text-white');
                 btnCode.classList.remove('text-slate-400');
-                btnPreview.classList.remove('bg-slate-700', 'text-white', 'font-medium');
+                btnPreview.classList.remove('bg-slate-700', 'text-white');
                 btnPreview.classList.add('text-slate-400');
             }
         }
 
-        function updateCodeDisplay(text) {
-            // CUSTOM PARSER: Looks for (filename.ext) ... --end
-            const regex = /\((.*?)\)\s*([\s\S]*?)--end/i;
-            const match = text.match(regex);
-
-            if (match && match.length >= 3) {
-                const fileName = match[1].trim();
-                currentCode = match[2].trim();
-                
-                // Determine language based on the file extension the AI provided
-                const ext = fileName.split('.').pop().toLowerCase();
-                currentLanguage = ext === 'js' ? 'javascript' : 
-                                  ext === 'html' ? 'html' : 
-                                  ext === 'css' ? 'css' : 
-                                  ext === 'json' ? 'json' : 'txt';
-                
-                fileNameDisplay.textContent = fileName;
-            } else {
-                // FALLBACK: If the AI messes up the format
-                console.log("Custom format not found, using raw text fallback.");
-                currentCode = text.trim();
-                currentLanguage = 'html'; 
-                fileNameDisplay.textContent = 'index.html';
+        function renderFileList() {
+            fileListContainer.innerHTML = '';
+            const fileNames = Object.keys(files);
+            
+            // Re-inject the empty state message if something goes wrong
+            if(fileNames.length === 0) {
+                fileListContainer.innerHTML = `<div class="text-xs text-slate-600 italic p-2 text-center mt-4">No files generated yet.</div>`;
+                return;
             }
 
-            // Force reset Highlight.js
-            codeDisplay.removeAttribute('data-highlighted');
+            fileNames.forEach(fileName => {
+                const isActive = fileName === currentActiveFile;
+                const baseClasses = "block w-full text-left px-3 py-2 rounded-md text-sm font-mono truncate transition-all cursor-pointer";
+                const activeClasses = "bg-yellow-400 text-black font-semibold shadow-sm";
+                const inactiveClasses = "text-slate-400 hover:bg-slate-800 hover:text-slate-200";
 
-            // Update code block UI
-            codeDisplay.className = `language-${currentLanguage} text-sm font-mono h-full block`;
-            codeDisplay.textContent = currentCode;
+                const btn = document.createElement('button');
+                btn.className = `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`;
+                btn.textContent = fileName;
+                btn.onclick = () => switchFile(fileName);
+                
+                fileListContainer.appendChild(btn);
+            });
+        }
+
+        function switchFile(fileName) {
+            currentActiveFile = fileName;
+            renderFileList(); 
+            
+            const fileData = files[fileName];
+            if(!fileData) return;
+
+            fileNameDisplay.textContent = fileName;
+
+            codeDisplay.removeAttribute('data-highlighted');
+            codeDisplay.className = `language-${fileData.lang} text-sm font-mono h-full block`;
+            codeDisplay.textContent = fileData.code;
             hljs.highlightElement(codeDisplay);
 
-            // Toggle logic: Only show preview button if it's HTML
-            if (currentLanguage === 'html') {
+            if (fileData.lang === 'html') {
                 viewToggles.classList.remove('hidden');
-                toggleView('preview');
+                toggleView('preview'); 
             } else {
                 viewToggles.classList.add('hidden');
                 toggleView('code'); 
             }
         }
 
+        function processAIResponse(rawText) {
+            // 1. Force string conversion just in case the gateway returns a JSON object
+            const text = typeof rawText === 'string' ? rawText : JSON.stringify(rawText, null, 2);
+            
+            let foundFiles = false;
+
+            // Strategy A: Hunt for your strict custom format (filename.ext)
+            const strictRegex = /\((.*?)\)\s*([\s\S]*?)--end/gi;
+            let match;
+            while ((match = strictRegex.exec(text)) !== null) {
+                foundFiles = true;
+                const fileName = match[1].trim() || `file_${Date.now()}.js`;
+                const codeContent = match[2].trim();
+                const ext = fileName.split('.').pop().toLowerCase();
+                const lang = ext === 'js' ? 'javascript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : ext === 'json' ? 'json' : 'txt';
+
+                files[fileName] = { code: codeContent, lang: lang };
+                if(!currentActiveFile) currentActiveFile = fileName;
+            }
+
+            // Strategy B (Fallback): If the AI rebelled and used Markdown anyway
+            if (!foundFiles) {
+                const mdRegex = /```(\w+)?\n([\s\S]*?)```/gi;
+                let mdMatch;
+                let counter = 1;
+                while ((mdMatch = mdRegex.exec(text)) !== null) {
+                    foundFiles = true;
+                    const lang = (mdMatch[1] || 'html').toLowerCase();
+                    const ext = lang === 'javascript' ? 'js' : lang;
+                    const fileName = `generated_${counter}.${ext}`;
+                    
+                    files[fileName] = { code: mdMatch[2].trim(), lang: lang };
+                    if(!currentActiveFile) currentActiveFile = fileName;
+                    counter++;
+                }
+            }
+
+            // Strategy C (Nuclear Fallback): Just dump the whole raw response into an HTML file
+            if (!foundFiles && text.trim().length > 0) {
+                files["app.html"] = { code: text.trim(), lang: 'html' };
+                currentActiveFile = "app.html";
+            }
+
+            renderFileList();
+            if (currentActiveFile) switchFile(currentActiveFile);
+        }
+
         function downloadCode() {
-            if (!currentCode) return;
-            const blob = new Blob([currentCode], { type: 'text/plain' });
+            if (!currentActiveFile || !files[currentActiveFile]) return;
+            const fileData = files[currentActiveFile];
+            const blob = new Blob([fileData.code], { type: 'text/plain' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = url;
-            a.download = fileNameDisplay.textContent;
+            a.download = currentActiveFile;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -232,41 +287,28 @@
             inputField.style.height = 'auto';
             appendMessage('user', prompt);
 
+            // Add loading indicators to both the Chat AND the File Explorer
             const loadingId = 'loading-' + Date.now();
             chatContainer.insertAdjacentHTML('beforeend', `<div id="${loadingId}" class="flex flex-col items-start animate-pulse"><div class="p-3 rounded-2xl rounded-tl-none bg-slate-800/50 border border-slate-700 shadow-sm text-sm text-slate-500">Generating code...</div></div>`);
             chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            fileListContainer.innerHTML = `<div class="text-xs text-yellow-400 italic p-2 text-center mt-4 animate-pulse">Building files...</div>`;
 
             try {
-                if (typeof window.dhruvs !== "function") {
-                    throw new Error("Gateway script not loaded or blocked.");
-                }
+                if (typeof window.dhruvs !== "function") throw new Error("Gateway script not loaded.");
 
-                const reply = await window.dhruvs(
-                    "gateway-call", 
-                    prompt, 
-                    "google/gemini-3.0-pro",
-                    true 
-                );
+                const reply = await window.dhruvs("gateway-call", prompt, "google/gemini-3.0-pro", true);
                 
                 document.getElementById(loadingId).remove();
                 
-                // Update the code panel
-                updateCodeDisplay(reply);
-                
-                // Append the chat message (the appendMessage function will now strip out the ugly code block from the chat UI)
+                processAIResponse(reply);
                 appendMessage('ai', reply);
 
             } catch (err) {
                 document.getElementById(loadingId).remove();
-                appendMessage('ai', `⚠️ Error: ${err.message}.`);
+                appendMessage('ai', `⚠️ Error: ${err.message}`);
+                renderFileList(); // Resets the file list UI if the call fails
             }
-        }
-
-        // Register Service Worker for PWA
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js');
-            });
         }
     </script>
 </body>
