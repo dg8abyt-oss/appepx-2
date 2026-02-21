@@ -278,7 +278,7 @@
             document.body.removeChild(a);
         }
 
-        async function sendToAI() {
+       async function sendToAI() {
             const prompt = inputField.value.trim();
             if (!prompt) return;
 
@@ -297,12 +297,24 @@
             try {
                 if (typeof window.dhruvs !== "function") throw new Error("Gateway script not loaded.");
 
+                // Call the gateway
                 const reply = await window.dhruvs("gateway-call", prompt, "google/gemini-3.0-pro", true);
                 
-                document.getElementById(loadingId).remove();
+                // 🛑 DIAGNOSTIC LOG: Press F12 to open your browser console and look for this!
+                console.log("RAW GATEWAY RESPONSE:", reply);
                 
-                processAIResponse(reply);
-                appendMessage('ai', reply);
+                document.getElementById(loadingId).remove();
+
+                // Safety check: Did the gateway return nothing?
+                if (!reply || (typeof reply === 'string' && reply.trim() === '')) {
+                    throw new Error("The gateway returned a completely blank response. (Check if google/gemini-3.0-pro is the correct model ID!)");
+                }
+                
+                // If the gateway returns an object instead of a string (e.g. { message: "..." })
+                const replyText = typeof reply === 'string' ? reply : (reply.text || reply.message || JSON.stringify(reply));
+                
+                processAIResponse(replyText);
+                appendMessage('ai', replyText);
 
             } catch (err) {
                 document.getElementById(loadingId).remove();
