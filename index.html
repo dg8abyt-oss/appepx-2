@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Appex Vibe Coder - Live Preview</title>
+    <title>Appex Vibe Coder - Studio</title>
     
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="https://ik.imagekit.io/migbb/vibe-coding.png?updatedAt=1771554953655" type="image/png" sizes="200x200" />
@@ -13,11 +13,8 @@
     
     <script src="https://gateway.dhruvs.host/widget.js" defer></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script>hljs.highlightAll();</script>
 
     <style>
         /* Modern Scrollbar */
@@ -26,16 +23,13 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
         body { font-family: 'Inter', sans-serif; }
-        .code-header { background-color: #1e293b; }
-        .code-content { background-color: #0d1117; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200 h-screen flex overflow-hidden">
 
     <div class="flex w-full h-full">
 
-        <div class="w-1/3 flex flex-col border-r border-slate-800 bg-slate-950">
-            
+        <div class="w-[30%] min-w-[300px] flex flex-col border-r border-slate-800 bg-slate-950">
             <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4">
                 <div class="flex flex-col items-start">
                     <div class="flex items-center gap-2 text-purple-400 mb-1">
@@ -58,15 +52,24 @@
                     </button>
                 </div>
             </div>
-
         </div>
 
-        <div class="w-2/3 flex flex-col bg-[#0d1117]">
+        <div class="w-[18%] min-w-[150px] flex flex-col bg-black border-r border-slate-800">
+            <div class="p-3 border-b border-slate-800 flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Workspace</span>
+            </div>
             
-            <div class="code-header flex items-center justify-between p-4 border-b border-slate-800">
+            <div id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                <div class="text-xs text-slate-600 italic p-2 text-center mt-4">No files generated yet.</div>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col bg-[#0d1117] relative">
+            
+            <div class="flex items-center justify-between p-3 border-b border-slate-800 bg-[#161b22]">
                 <div class="flex items-center gap-4">
-                    <div id="file-name" class="font-mono text-sm font-semibold text-yellow-400 bg-yellow-400/10 px-3 py-1 rounded">
-                        code.js
+                    <div id="file-name-display" class="font-mono text-sm font-semibold text-slate-300">
+                        Waiting for files...
                     </div>
                     
                     <div id="view-toggles" class="hidden flex bg-slate-900 rounded-lg p-1 border border-slate-700">
@@ -75,7 +78,7 @@
                     </div>
                 </div>
 
-                <button onclick="downloadCode()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm transition">
+                <button onclick="downloadCode()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-3 py-1.5 rounded-md text-sm transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
@@ -84,18 +87,14 @@
             </div>
             
             <div class="flex-1 relative overflow-auto p-4">
-                <pre id="code-container" class="m-0 h-full"><code id="code-display" class="language-javascript text-sm font-mono h-full block">/*
-  Your generated code will appear here.
-  Start by describing what you want to build in the chat.
-*/</code></pre>
-
+                <pre id="code-container" class="m-0 h-full"><code id="code-display" class="language-html text-sm font-mono h-full block text-slate-500">/* Generated code will appear here */</code></pre>
                 <iframe id="preview-frame" class="w-full h-full bg-white rounded-md hidden border-none" sandbox="allow-scripts allow-forms allow-same-origin allow-modals"></iframe>
             </div>
         </div>
 
     </div>
 
-<script>
+    <script>
         const chatContainer = document.getElementById('chat-container');
         const inputField = document.getElementById('prompt-input');
         
@@ -113,12 +112,14 @@
         let files = {}; 
         let currentActiveFile = null;
 
+        // Auto-resize textarea
         inputField.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
             if(this.value === '') this.style.height = 'auto';
         });
 
+        // Enter to send
         inputField.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -129,7 +130,6 @@
         function appendMessage(role, text) {
             const isUser = role === 'user';
             
-            // Clean up the chat UI
             let chatText = typeof text === 'string' ? text : JSON.stringify(text);
             if (!isUser) {
                 chatText = chatText.replace(/\((.*?)\)\s*([\s\S]*?)--end/gi, '\n[File generated: $1]\n');
@@ -170,10 +170,11 @@
         }
 
         function renderFileList() {
+            if(!fileListContainer) return;
+            
             fileListContainer.innerHTML = '';
             const fileNames = Object.keys(files);
             
-            // Re-inject the empty state message if something goes wrong
             if(fileNames.length === 0) {
                 fileListContainer.innerHTML = `<div class="text-xs text-slate-600 italic p-2 text-center mt-4">No files generated yet.</div>`;
                 return;
@@ -218,12 +219,10 @@
         }
 
         function processAIResponse(rawText) {
-            // 1. Force string conversion just in case the gateway returns a JSON object
             const text = typeof rawText === 'string' ? rawText : JSON.stringify(rawText, null, 2);
-            
             let foundFiles = false;
 
-            // Strategy A: Hunt for your strict custom format (filename.ext)
+            // Strategy A: Custom format
             const strictRegex = /\((.*?)\)\s*([\s\S]*?)--end/gi;
             let match;
             while ((match = strictRegex.exec(text)) !== null) {
@@ -237,7 +236,7 @@
                 if(!currentActiveFile) currentActiveFile = fileName;
             }
 
-            // Strategy B (Fallback): If the AI rebelled and used Markdown anyway
+            // Strategy B: Fallback Markdown
             if (!foundFiles) {
                 const mdRegex = /```(\w+)?\n([\s\S]*?)```/gi;
                 let mdMatch;
@@ -254,7 +253,7 @@
                 }
             }
 
-            // Strategy C (Nuclear Fallback): Just dump the whole raw response into an HTML file
+            // Strategy C: Nuclear Fallback
             if (!foundFiles && text.trim().length > 0) {
                 files["app.html"] = { code: text.trim(), lang: 'html' };
                 currentActiveFile = "app.html";
@@ -287,12 +286,13 @@
             inputField.style.height = 'auto';
             appendMessage('user', prompt);
 
-            // Add loading indicators to both the Chat AND the File Explorer
             const loadingId = 'loading-' + Date.now();
             chatContainer.insertAdjacentHTML('beforeend', `<div id="${loadingId}" class="flex flex-col items-start animate-pulse"><div class="p-3 rounded-2xl rounded-tl-none bg-slate-800/50 border border-slate-700 shadow-sm text-sm text-slate-500">Generating code...</div></div>`);
             chatContainer.scrollTop = chatContainer.scrollHeight;
             
-            fileListContainer.innerHTML = `<div class="text-xs text-yellow-400 italic p-2 text-center mt-4 animate-pulse">Building files...</div>`;
+            if(fileListContainer) {
+                fileListContainer.innerHTML = `<div class="text-xs text-yellow-400 italic p-2 text-center mt-4 animate-pulse">Building files...</div>`;
+            }
 
             try {
                 if (typeof window.dhruvs !== "function") throw new Error("Gateway script not loaded.");
@@ -307,7 +307,7 @@
             } catch (err) {
                 document.getElementById(loadingId).remove();
                 appendMessage('ai', `⚠️ Error: ${err.message}`);
-                renderFileList(); // Resets the file list UI if the call fails
+                renderFileList(); 
             }
         }
     </script>
