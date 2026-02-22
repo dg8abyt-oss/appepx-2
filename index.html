@@ -609,7 +609,7 @@
             }
         }
 
-        async function pushToLinkedRepo() {
+async function pushToLinkedRepo() {
             const proj = getActiveProj();
             if (!githubToken) return alert("⚠️ Connect GitHub Account first!");
             if (!proj.repo) return alert("⚠️ Please Link a repo in the sidebar first!");
@@ -621,42 +621,68 @@
             ui.chatContainer.scrollTop = ui.chatContainer.scrollHeight;
 
             try {
-                const res = await fetch('/api/github/push', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: githubToken, repo: proj.repo, files: sanitizedWorkspace, message: "Secure Push via Appex Vibe Coder" })
+                // 1. Get the default branch and the latest commit
+                const repoRes = await fetch(`https://api.github.com/repos/${proj.repo}`, { headers: { 'Authorization': `Bearer ${githubToken}` } });
+                if (!repoRes.ok) throw new Error("Could not access repo.");
+                const repoData = await repoRes.json();
+                const branch = repoData.default_branch || 'main';
+
+                let latestCommitSha;
+                const refRes = await fetch(`https://api.github.com/repos/${proj.repo}/git/refs/heads/${branch}`, { headers: { 'Authorization': `Bearer ${githubToken}` } });
+                if (refRes.ok) {
+                    const refData = await refRes.json();
+                    latestCommitSha = refData.object.sha;
+                } else {
+                    throw new Error(`Could not find branch ${branch}. Create a file in it first.`);
+                }
+
+                // 2. Build the new file tree
+                const treePayload = {
+                    base_tree: latestCommitSha,
+                    tree: Object.keys(sanitizedWorkspace).map(fileName => ({
+                        path: fileName,
+                        mode: '100644',
+                        type: 'blob',
+                        content: sanitizedWorkspace[fileName].code
+                    }))
+                };
+
+                const treeRes = await fetch(`https://api.github.com/repos/${proj.repo}/git/trees`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${githubToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(treePayload)
                 });
-                const data = await res.json(); document.getElementById(loadingId).remove();
-                if (data.error) throw new Error(data.error);
+                if (!treeRes.ok) throw new Error("Failed to map files to GitHub.");
+                const treeData = await treeRes.json();
+
+                // 3. Create a Commit
+                const commitRes = await fetch(`https://api.github.com/repos/${proj.repo}/git/commits`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${githubToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: "Secure Push via Appex Vibe Coder",
+                        tree: treeData.sha,
+                        parents: [latestCommitSha]
+                    })
+                });
+                if (!commitRes.ok) throw new Error("Failed to create commit.");
+                const commitData = await commitRes.json();
+
+                // 4. Update the branch reference (The actual "Push")
+                const updateRes = await fetch(`https://api.github.com/repos/${proj.repo}/git/refs/heads/${branch}`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${githubToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sha: commitData.sha })
+                });
+                if (!updateRes.ok) throw new Error("Failed to push updates to branch.");
+
+                document.getElementById(loadingId).remove(); 
                 appendMessage('ai', `${ICONS.rocket} Successfully pushed to [${proj.repo}](https://github.com/${proj.repo})! \n(Keys safely injected into .env)`);
             } catch (err) {
-                document.getElementById(loadingId).remove(); appendMessage('ai', `${ICONS.warn} Push Failed: ${err.message}`);
+                document.getElementById(loadingId).remove(); 
+                appendMessage('ai', `${ICONS.warn} Push Failed: ${err.message}`);
             }
         }
-
-        function downloadCode() {
-            const sanitizedWorkspace = getSanitizedFiles();
-            if (!currentActiveFile || !sanitizedWorkspace[currentActiveFile]) return;
-            const blob = new Blob([sanitizedWorkspace[currentActiveFile].code], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = currentActiveFile;
-            document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
-        }
-
-        function toggleView(view) {
-            ui.codeContainer.classList.add('hidden'); ui.previewFrame.classList.add('hidden'); ui.apiSandbox.classList.add('hidden');
-            ui.btnPreview.className = "px-3 py-1 text-xs rounded-md text-slate-400 hover:text-white transition";
-            ui.btnCode.className = "px-3 py-1 text-xs rounded-md text-slate-400 hover:text-white transition";
-
-            if (view === 'preview') {
-                ui.btnPreview.classList.add('bg-slate-700', 'text-white');
-                if (currentActiveFile && currentActiveFile.startsWith('api/')) ui.apiSandbox.classList.remove('hidden');
-                else {
-                    ui.previewFrame.classList.remove('hidden');
-                    if(getActiveProj().files[currentActiveFile]) ui.previewFrame.srcdoc = getActiveProj().files[currentActiveFile].code;
-                }
-            } else { ui.codeContainer.classList.remove('hidden'); ui.btnCode.classList.add('bg-slate-700', 'text-white'); }
-        }
-
         function renderFileList() {
             ui.fileList.innerHTML = ''; const files = getActiveProj().files;
             if(Object.keys(files).length === 0) return ui.fileList.innerHTML = `<div class="text-xs text-slate-600 italic p-2 text-center">No files yet.</div>`;
