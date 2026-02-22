@@ -26,6 +26,24 @@
 </head>
 <body class="bg-slate-950 text-slate-200 h-screen flex overflow-hidden">
 
+    <div id="supa-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 w-[400px] shadow-2xl">
+            <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path></svg>
+                Link Supabase Data
+            </h2>
+            <p class="text-xs text-slate-400 mb-4 leading-relaxed">The AI generated code that requires a database. Enter your keys below to test it locally. <br><span class="text-yellow-400/80">Keys will be safely injected into a .env file upon push.</span></p>
+            
+            <input id="supa-url" type="text" placeholder="Project URL (https://...)" class="w-full bg-slate-800 text-sm px-3 py-2 rounded border border-slate-700 outline-none focus:border-green-500 text-slate-200 mb-2">
+            <input id="supa-key" type="password" placeholder="Anon Key" class="w-full bg-slate-800 text-sm px-3 py-2 rounded border border-slate-700 outline-none focus:border-green-500 text-slate-200 mb-4">
+            
+            <div class="flex justify-end gap-2 mt-2">
+                <button onclick="closeSupabaseModal()" class="px-4 py-2 text-xs text-slate-400 hover:text-white transition font-medium">Cancel</button>
+                <button onclick="saveSupabase()" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-xs rounded font-medium transition shadow-sm">Save & Inject</button>
+            </div>
+        </div>
+    </div>
+
     <div class="w-48 flex flex-col bg-[#050505] border-r border-slate-800 z-10">
         <div class="p-3 border-b border-slate-800 flex items-center gap-2">
             <img src="https://ik.imagekit.io/migbb/vibe-coding.png?updatedAt=1771554953655" class="w-5 h-5 rounded">
@@ -56,28 +74,25 @@
     <div class="w-[15%] min-w-[180px] flex flex-col bg-black border-r border-slate-800">
         
         <div class="p-3 border-b border-slate-800 flex flex-col gap-2">
-            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">GitHub Sync</span>
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Integrations</span>
+            
             <button id="btn-github-auth" onclick="window.location.href='/api/auth/github'" class="w-full bg-[#24292e] hover:bg-[#1b1f23] text-white text-xs py-1.5 rounded border border-slate-700 font-medium transition flex items-center justify-center gap-2 mb-1">
                 <svg viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-                Connect Account
+                Connect GitHub
             </button>
-            <div class="flex gap-1">
+
+            <button id="btn-supa-open" onclick="openSupabaseModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1.5 rounded border border-slate-700 font-medium transition flex items-center justify-center gap-2">
+                <svg class="w-3 h-3 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path></svg>
+                Configure Supabase
+            </button>
+
+            <div class="flex gap-1 mt-2">
                 <input id="repo-input" type="text" placeholder="user/repo" class="w-full bg-slate-800 text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-blue-500 text-slate-200">
                 <button onclick="linkRepo()" class="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded text-xs text-white transition font-medium flex items-center justify-center">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                 </button>
             </div>
             <div id="repo-status" class="text-[10px] text-slate-500 font-mono truncate hidden">Linked: none</div>
-        </div>
-
-        <div class="p-3 border-b border-slate-800 flex flex-col gap-2">
-            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Supabase Data</span>
-            <input id="supa-url" type="text" placeholder="Project URL" class="w-full bg-slate-800 text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-green-500 text-slate-200">
-            <input id="supa-key" type="password" placeholder="Anon Key" class="w-full bg-slate-800 text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-green-500 text-slate-200">
-            <button onclick="saveSupabase()" id="btn-supa-save" class="w-full bg-green-600 hover:bg-green-500 text-white text-xs py-1.5 rounded transition font-medium shadow-sm flex items-center justify-center gap-1">
-                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path></svg>
-                Link Database
-            </button>
         </div>
 
         <div id="file-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
@@ -99,7 +114,7 @@
             <div class="flex gap-2">
                 <button onclick="pushToLinkedRepo()" class="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-md text-xs transition font-medium shadow-sm">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                    Push
+                    Push Updates
                 </button>
                 <button onclick="downloadCode()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-3 py-1.5 rounded-md text-xs transition">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -136,7 +151,7 @@
     </div>
 
     <script>
-        // Icons for JS strings
+        // Icons
         const ICONS = {
             check: `<svg class="w-4 h-4 inline text-green-400 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>`,
             warn: `<svg class="w-4 h-4 inline text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>`,
@@ -198,6 +213,29 @@
             checkIntegrationsStatus();
         }
 
+        // --- SUPABASE MODAL & INTEGRATION ---
+        function openSupabaseModal() {
+            document.getElementById('supa-modal').classList.remove('hidden');
+            if (appState.supabase.url) document.getElementById('supa-url').value = appState.supabase.url;
+            if (appState.supabase.key) document.getElementById('supa-key').value = appState.supabase.key;
+        }
+
+        function closeSupabaseModal() {
+            document.getElementById('supa-modal').classList.add('hidden');
+        }
+
+        function saveSupabase() {
+            const url = document.getElementById('supa-url').value.trim();
+            const key = document.getElementById('supa-key').value.trim();
+            if (!url || !key) return alert("Please provide both URL and Key!");
+            
+            appState.supabase = { url, key };
+            saveState();
+            closeSupabaseModal();
+            checkIntegrationsStatus();
+            appendMessage('ai', `${ICONS.check} Supabase credentials saved! They will automatically inject via \`.env\` when you Push.`);
+        }
+
         function checkIntegrationsStatus() {
             if (githubToken) {
                 const ghBtn = document.getElementById('btn-github-auth');
@@ -208,25 +246,13 @@
                 ghBtn.classList.replace('border-slate-700', 'border-green-500/30');
             }
             if (appState.supabase && appState.supabase.url) {
-                document.getElementById('supa-url').value = appState.supabase.url;
-                document.getElementById('supa-key').value = appState.supabase.key;
-                const supaBtn = document.getElementById('btn-supa-save');
-                supaBtn.innerHTML = `${ICONS.check} Supabase Linked`;
-                supaBtn.classList.replace('bg-green-600', 'bg-slate-700');
-                supaBtn.classList.replace('hover:bg-green-500', 'hover:bg-slate-600');
+                const supaBtn = document.getElementById('btn-supa-open');
+                supaBtn.innerHTML = `${ICONS.check} Supabase Configured`;
+                supaBtn.classList.replace('text-slate-300', 'text-green-400');
             }
         }
 
-        function saveSupabase() {
-            const url = document.getElementById('supa-url').value.trim();
-            const key = document.getElementById('supa-key').value.trim();
-            if (!url || !key) return alert("Please provide both URL and Key!");
-            appState.supabase = { url, key };
-            saveState();
-            checkIntegrationsStatus();
-            appendMessage('ai', `${ICONS.check} Supabase credentials saved! They will automatically inject via \`vercel.json\` when you Push.`);
-        }
-
+        // --- PROJECT MANAGEMENT ---
         function renderProjects() {
             ui.projectList.innerHTML = '';
             for (const [id, proj] of Object.entries(appState.projects)) {
@@ -327,6 +353,11 @@
             let foundFiles = false;
             let counter = 1;
 
+            // Trigger Supabase popup if mentioned and not linked
+            if (text.toUpperCase().includes('SUPABASE') && (!appState.supabase || !appState.supabase.url)) {
+                setTimeout(() => openSupabaseModal(), 1000);
+            }
+
             const mdRegex = /```(\w+)?\n([\s\S]*?)```/gi; let mdMatch;
             while ((mdMatch = mdRegex.exec(text)) !== null) {
                 foundFiles = true;
@@ -382,10 +413,11 @@
             }
             promptWithContext += `\n--- CURRENT TASK ---\nUSER: ${userPrompt}\nSystem: Output FULL code using (filename.ext) format.`;
 
+            // STRICT DIRECTIVE FOR .ENV
             if (appState.supabase && appState.supabase.url) {
-                promptWithContext += `\nSystem Directive: Supabase is LINKED. Use \`process.env.SUPABASE_URL\` and \`process.env.SUPABASE_ANON_KEY\`. Do NOT hardcode the raw URL.`;
+                promptWithContext += `\nSystem Directive: Supabase is LINKED. Use \`process.env.SUPABASE_URL\` and \`process.env.SUPABASE_ANON_KEY\`. Do NOT hardcode the raw URL. The system handles the .env file automatically.`;
             } else {
-                promptWithContext += `\nSystem Directive: Supabase NOT linked. If asked for DB, remind user to enter URL/Key in the sidebar.`;
+                promptWithContext += `\nSystem Directive: Supabase NOT linked. If asked for DB, write the code using \`process.env.SUPABASE_URL\` and \`process.env.SUPABASE_ANON_KEY\` anyway. The IDE will prompt the user for their keys.`;
             }
 
             try {
@@ -401,18 +433,26 @@
             }
         }
 
+        // --- THE INTERCEPTOR (For Push and Download) ---
         function getSanitizedFiles() {
             const proj = getActiveProj(); let safeWorkspace = {};
             for (const [fileName, fileData] of Object.entries(proj.files)) {
                 let cleanCode = fileData.code;
+                
+                // If AI hardcoded keys, forcefully strip them and replace with ENV calls
                 if (appState.supabase && appState.supabase.url) {
                     cleanCode = cleanCode.replaceAll(`'${appState.supabase.url}'`, 'process.env.SUPABASE_URL').replaceAll(`"${appState.supabase.url}"`, 'process.env.SUPABASE_URL').replaceAll(appState.supabase.url, 'process.env.SUPABASE_URL');
                     cleanCode = cleanCode.replaceAll(`'${appState.supabase.key}'`, 'process.env.SUPABASE_ANON_KEY').replaceAll(`"${appState.supabase.key}"`, 'process.env.SUPABASE_ANON_KEY').replaceAll(appState.supabase.key, 'process.env.SUPABASE_ANON_KEY');
                 }
                 safeWorkspace[fileName] = { ...fileData, code: cleanCode };
             }
+
+            // AUTO GENERATE .ENV FILE
             if (appState.supabase && appState.supabase.url) {
-                safeWorkspace['vercel.json'] = { code: JSON.stringify({ env: { SUPABASE_URL: appState.supabase.url, SUPABASE_ANON_KEY: appState.supabase.key } }, null, 2), lang: 'json' };
+                safeWorkspace['.env'] = { 
+                    code: `SUPABASE_URL=${appState.supabase.url}\nSUPABASE_ANON_KEY=${appState.supabase.key}`, 
+                    lang: 'txt' 
+                };
             }
             return safeWorkspace;
         }
@@ -427,10 +467,10 @@
                 if (!res.ok) throw new Error("Repo not found or private.");
                 const items = await res.json(); const proj = getActiveProj(); proj.files = {}; proj.repo = repoPath; 
                 for (const item of items) {
-                    if (item.type === 'file' && (item.name.endsWith('.html') || item.name.endsWith('.js') || item.name.endsWith('.ts') || item.name.endsWith('.css') || item.name.endsWith('.json'))) {
+                    if (item.type === 'file' && (item.name.endsWith('.html') || item.name.endsWith('.js') || item.name.endsWith('.ts') || item.name.endsWith('.css') || item.name.endsWith('.json') || item.name === '.env')) {
                         const fileRes = await fetch(item.download_url); const content = await fileRes.text();
                         const ext = item.name.split('.').pop().toLowerCase();
-                        const lang = ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : 'json';
+                        const lang = ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : ext === 'json' ? 'json' : 'txt';
                         proj.files[item.name] = { code: content, lang: lang }; if(!currentActiveFile) currentActiveFile = item.name;
                     }
                 }
@@ -456,7 +496,7 @@
                 });
                 const data = await res.json(); document.getElementById(loadingId).remove();
                 if (data.error) throw new Error(data.error);
-                appendMessage('ai', `${ICONS.rocket} Successfully pushed to [${proj.repo}](https://github.com/${proj.repo})! \n(Keys safely injected into vercel.json)`);
+                appendMessage('ai', `${ICONS.rocket} Successfully pushed to [${proj.repo}](https://github.com/${proj.repo})! \n(Keys safely injected into .env)`);
             } catch (err) {
                 document.getElementById(loadingId).remove(); appendMessage('ai', `${ICONS.warn} Push Failed: ${err.message}`);
             }
@@ -516,6 +556,10 @@
         async function runServerlessMock() {
             if (!currentActiveFile || !currentActiveFile.startsWith('api/')) return;
             ui.apiOutput.textContent = "Executing..."; ui.apiOutput.classList.replace('text-green-400', 'text-slate-400'); ui.apiOutput.classList.replace('text-red-400', 'text-slate-400');
+            
+            // Get raw code. If the AI hardcoded the env var access, we don't need to change it.
+            // But if it hardcoded raw strings, the interceptor won't fix it *until* download/push.
+            // For live local mock, we inject our local env variables so `process.env` works!
             let rawCode = getActiveProj().files[currentActiveFile].code;
             
             try {
@@ -524,6 +568,7 @@
                 if (!executableCode.includes("const __appexHandler")) executableCode = rawCode.replace(/module\.exports\s*=\s*(?:async\s+)?(?:function\s*[a-zA-Z0-9_]*\s*)?(?:\([^)]*\)\s*=>\s*|\s*\([^)]*\)\s*\{)/, "const __appexHandler = async function(req, res) {");
                 if (!executableCode.includes("const __appexHandler")) throw new Error("Could not find standard Vercel export default/module.exports function.");
                 
+                // MOCK ENVIRONMENT VARIABLES IN THE BROWSER
                 const envInject = `const process = { env: { SUPABASE_URL: '${appState.supabase?.url || ''}', SUPABASE_ANON_KEY: '${appState.supabase?.key || ''}' } };\n`;
                 executableCode = envInject + executableCode + `\nreturn __appexHandler;`;
                 
