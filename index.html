@@ -636,14 +636,14 @@ async function pushToLinkedRepo() {
                     throw new Error(`Could not find branch ${branch}. Create a file in it first.`);
                 }
 
-                // 2. Build the new file tree
+                // 2. Build the new file tree (WITH PATH SANITIZER)
                 const treePayload = {
                     base_tree: latestCommitSha,
                     tree: Object.keys(sanitizedWorkspace).map(fileName => ({
-                        path: fileName,
+                        path: fileName.replace(/^\/+/, ''), // Safely removes leading slashes (e.g., /api/ -> api/)
                         mode: '100644',
                         type: 'blob',
-                        content: sanitizedWorkspace[fileName].code
+                        content: sanitizedWorkspace[fileName].code || "\n" // Prevents empty file crashes
                     }))
                 };
 
@@ -652,7 +652,12 @@ async function pushToLinkedRepo() {
                     headers: { 'Authorization': `Bearer ${githubToken}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(treePayload)
                 });
-                if (!treeRes.ok) throw new Error("Failed to map files to GitHub.");
+                
+                // Expose EXACT GitHub errors so we never have to guess again
+                if (!treeRes.ok) {
+                    const errData = await treeRes.json();
+                    throw new Error(`GitHub API Error: ${errData.message}`);
+                }
                 const treeData = await treeRes.json();
 
                 // 3. Create a Commit
@@ -681,18 +686,6 @@ async function pushToLinkedRepo() {
             } catch (err) {
                 document.getElementById(loadingId).remove(); 
                 appendMessage('ai', `${ICONS.warn} Push Failed: ${err.message}`);
-            }
-        }
-        function renderFileList() {
-            ui.fileList.innerHTML = ''; const files = getActiveProj().files;
-            if(Object.keys(files).length === 0) return ui.fileList.innerHTML = `<div class="text-xs text-slate-600 italic p-2 text-center">No files yet.</div>`;
-            for (const fileName in files) {
-                const isActive = fileName === currentActiveFile;
-                const btn = document.createElement('button');
-                btn.className = `flex items-center gap-2 w-full text-left px-3 py-2 rounded-md text-xs font-mono truncate transition-all cursor-pointer ${isActive ? 'bg-yellow-400 text-black font-semibold shadow-sm' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`;
-                btn.innerHTML = `${ICONS.folder} <span>${fileName}</span>`; 
-                btn.onclick = () => switchFile(fileName);
-                ui.fileList.appendChild(btn);
             }
         }
 
