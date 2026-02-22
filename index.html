@@ -245,16 +245,16 @@
             saveState();
             closeSupabaseModal();
             checkIntegrationsStatus();
+            appendMessage('system', `${ICONS.check} Supabase credentials saved!`);
         }
 
-        // NEW: Copy ENV Function
         function copyEnvVars() {
             if (!appState.supabase || !appState.supabase.url) return alert("No Supabase keys configured!");
             const envText = `SUPABASE_URL=${appState.supabase.url}\nSUPABASE_ANON_KEY=${appState.supabase.key}`;
             navigator.clipboard.writeText(envText).then(() => {
                 const btn = document.getElementById('btn-copy-env');
                 const originalHTML = btn.innerHTML;
-                btn.innerHTML = `${ICONS.check} Copied to Clipboard!`;
+                btn.innerHTML = `${ICONS.check} Copied!`;
                 btn.classList.replace('text-slate-300', 'text-green-400');
                 setTimeout(() => {
                     btn.innerHTML = originalHTML;
@@ -276,8 +276,6 @@
                 const supaBtn = document.getElementById('btn-supa-open');
                 supaBtn.innerHTML = `${ICONS.edit} Edit Supabase Config`;
                 supaBtn.classList.replace('text-slate-300', 'text-green-400');
-                
-                // Show the copy button
                 document.getElementById('btn-copy-env').classList.remove('hidden');
             } else {
                 document.getElementById('btn-copy-env').classList.add('hidden');
@@ -346,7 +344,7 @@
                     body: JSON.stringify({ 
                         name: repoName.replace(/\s+/g, '-'), 
                         private: isPrivate,
-                        auto_init: true // Creates 'main' branch
+                        auto_init: true 
                     })
                 });
                 
@@ -354,7 +352,7 @@
                 const data = await res.json();
                 
                 document.getElementById(loadingId).remove();
-                appendMessage('ai', `${ICONS.check} Successfully created new repository: **${data.full_name}**`);
+                appendMessage('system', `${ICONS.check} Successfully created new repository: **${data.full_name}**`);
                 
                 ui.repoInput.value = data.full_name;
                 await fetchUserRepos(); 
@@ -362,7 +360,7 @@
                 
             } catch (err) {
                 document.getElementById(loadingId).remove();
-                appendMessage('ai', `${ICONS.warn} Repo Creation Failed: ${err.message}`);
+                appendMessage('system', `${ICONS.warn} Repo Creation Failed: ${err.message}`);
             }
         }
 
@@ -431,27 +429,44 @@
             if (currentActiveFile) switchFile(currentActiveFile); else resetCodeView();
         }
 
+        // --- CHAT RENDERER (NOW WITH SYSTEM ROLE) ---
         function renderChatHistory() {
             ui.chatContainer.innerHTML = '';
             const chat = getActiveProj().chat;
-            if (chat.length === 0) ui.chatContainer.innerHTML = `<div class="p-3 rounded-2xl rounded-tl-none bg-slate-800/50 border border-slate-700 shadow-sm text-sm text-slate-300">Workspace ready. Let's code.</div>`;
-            else chat.forEach(msg => drawChatBubble(msg.role, msg.text));
+            if (chat.length === 0) {
+                ui.chatContainer.innerHTML = `<div class="p-3 rounded-2xl rounded-tl-none bg-slate-800/50 border border-slate-700 shadow-sm text-sm text-slate-300">Workspace ready. Let's code.</div>`;
+            } else {
+                chat.forEach(msg => drawChatBubble(msg.role, msg.text));
+            }
             ui.chatContainer.scrollTop = ui.chatContainer.scrollHeight;
         }
 
         function drawChatBubble(role, text) {
             const isUser = role === 'user';
+            const isSystem = role === 'system';
+            
             let chatText = typeof text === 'string' ? text : JSON.stringify(text);
-            if (!isUser) {
+            
+            if (role === 'ai') {
+                // Safely escape AI HTML, but parse the code blocks
+                chatText = chatText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 chatText = chatText.replace(/```[\s\S]*?```/gi, `\n[Code generated in File Explorer]\n`);
-                chatText = chatText.replace(/\((.*?)\)\s*([\s\S]*?)(?:--end|$)/gi, `\n[File generated: $1]\n`);
+                chatText = chatText.replace(/\(([^)]+\.[a-z0-9]+)\)\s*\n([\s\S]*?)(?:--end|$)/gi, `\n[File generated: $1]\n`);
                 chatText = chatText.replace(/\[File generated: .*?\]\s*\[Code generated in File Explorer\]/gi, `[Code generated in panel]`);
+            } else if (isUser) {
+                chatText = chatText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            } else if (isSystem) {
+                // For SYSTEM notifications, keep SVGs intact and parse simple Markdown Links!
+                chatText = chatText.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="text-blue-400 hover:text-blue-300 underline transition">$1</a>');
+                chatText = chatText.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-200">$1</strong>');
+                chatText = chatText.replace(/`(.*?)`/g, '<code class="bg-slate-800 text-yellow-400 px-1 py-0.5 rounded text-[10px]">$1</code>');
             }
+
             const html = `<div class="flex flex-col ${isUser ? 'items-end' : 'items-start'} mb-4">
-                <div class="flex items-center gap-2 mb-1 ${isUser ? 'text-blue-400 flex-row-reverse' : 'text-purple-400'}">
-                    <span class="font-semibold text-xs">${isUser ? 'You' : 'Appex Agent'}</span>
+                <div class="flex items-center gap-2 mb-1 ${isUser ? 'text-blue-400 flex-row-reverse' : isSystem ? 'text-slate-500' : 'text-purple-400'}">
+                    <span class="font-semibold text-[10px] uppercase tracking-wider">${isUser ? 'You' : isSystem ? 'System Info' : 'Appex Agent'}</span>
                 </div>
-                <div class="p-3 rounded-2xl ${isUser ? 'bg-blue-600/10 border-blue-500/30 rounded-tr-none text-slate-200' : 'bg-slate-800/50 border-slate-700 rounded-tl-none text-slate-300'} shadow-sm text-sm whitespace-pre-wrap">${chatText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+                <div class="p-3 rounded-2xl ${isUser ? 'bg-blue-600/10 border-blue-500/30 rounded-tr-none text-slate-200' : isSystem ? 'bg-slate-800/40 border border-slate-700/50 text-slate-300 text-xs w-full' : 'bg-slate-800/50 border-slate-700 rounded-tl-none text-slate-300'} shadow-sm text-sm whitespace-pre-wrap leading-relaxed">${chatText}</div>
             </div>`;
             ui.chatContainer.insertAdjacentHTML('beforeend', html);
             ui.chatContainer.scrollTop = ui.chatContainer.scrollHeight;
@@ -541,7 +556,7 @@
                 processAIResponse(replyText); appendMessage('ai', replyText);
             } catch (err) {
                 const loader = document.getElementById(loadingId); if(loader) loader.remove();
-                appendMessage('ai', `${ICONS.warn} Error: ${err.message}`);
+                appendMessage('system', `${ICONS.warn} Error: ${err.message}`);
             }
         }
 
@@ -555,10 +570,8 @@
                     cleanCode = cleanCode.replaceAll(`'${appState.supabase.key}'`, 'process.env.SUPABASE_ANON_KEY').replaceAll(`"${appState.supabase.key}"`, 'process.env.SUPABASE_ANON_KEY').replaceAll(appState.supabase.key, 'process.env.SUPABASE_ANON_KEY');
                 }
                 
-                // Do NOT push .env file to GitHub
                 safeWorkspace[fileName] = { ...fileData, code: cleanCode };
             }
-
             return safeWorkspace;
         }
 
@@ -607,19 +620,19 @@
                 }
 
                 saveState(); 
-                appendMessage('ai', `${ICONS.check} Linked to repository: **${repoPath}**`); 
+                appendMessage('system', `${ICONS.check} Linked to repository: **${repoPath}**`); 
                 loadProject(appState.activeProjectId); 
                 
             } catch (error) { 
                 if (error.message.includes("Authentication failed")) {
-                    appendMessage('ai', `${ICONS.warn} ${error.message}`);
+                    appendMessage('system', `${ICONS.warn} ${error.message}`);
                     renderFileList();
                 } else {
                     const proj = getActiveProj();
                     proj.repo = repoPath;
                     saveState();
                     loadProject(appState.activeProjectId);
-                    appendMessage('ai', `${ICONS.check} Linked to empty repository: **${repoPath}**. Ready to push!`); 
+                    appendMessage('system', `${ICONS.check} Linked to empty repository: **${repoPath}**. Ready to push!`); 
                 }
             }
         }
@@ -695,12 +708,12 @@
                 
                 let successMsg = `${ICONS.rocket} Successfully pushed to [${proj.repo}](https://github.com/${proj.repo})!`;
                 if (appState.supabase && appState.supabase.url) {
-                    successMsg += `\n\n⚠️ **Action Required:** Don't forget to paste your .env variables into your Vercel Dashboard!`;
+                    successMsg += `\n\n⚠️ **Action Required:** Don't forget to paste your keys into Vercel using the \`Copy .env\` button!`;
                 }
-                appendMessage('ai', successMsg);
+                appendMessage('system', successMsg);
             } catch (err) {
                 document.getElementById(loadingId).remove(); 
-                appendMessage('ai', `${ICONS.warn} Push Failed: ${err.message}`);
+                appendMessage('system', `${ICONS.warn} Push Failed: ${err.message}`);
             }
         }
 
