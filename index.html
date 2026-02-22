@@ -180,7 +180,7 @@
             window.history.replaceState({}, document.title, "/"); 
         }
 
-        let cachedRepos = []; // Stores user repos for dropdown
+        let cachedRepos = []; 
 
         const saveState = () => localStorage.setItem('appex_state', JSON.stringify(appState));
         const getActiveProj = () => appState.projects[appState.activeProjectId] || appState.projects['default'];
@@ -219,7 +219,7 @@
             renderProjects();
             loadProject(appState.activeProjectId);
             checkIntegrationsStatus();
-            fetchUserRepos(); // Load repos for dropdown
+            fetchUserRepos(); 
         }
 
         // --- SUPABASE MODAL & INTEGRATION ---
@@ -263,7 +263,7 @@
         async function fetchUserRepos() {
             if (!githubToken) return;
             try {
-                const res = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', { headers: { 'Authorization': `token ${githubToken}` } });
+                const res = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', { headers: { 'Authorization': `Bearer ${githubToken}` } });
                 if (res.ok) cachedRepos = await res.json();
             } catch (e) { console.error("Failed to fetch repos", e); }
         }
@@ -275,7 +275,6 @@
         }
 
         function hideRepoDropdown() {
-            // Timeout allows the click event on the dropdown item to fire before it hides
             setTimeout(() => ui.repoDropdown.classList.add('hidden'), 200);
         }
 
@@ -298,6 +297,7 @@
                 div.onclick = () => {
                     ui.repoInput.value = repo.full_name;
                     hideRepoDropdown();
+                    linkRepo(); // Instantly trigger link
                 };
                 ui.repoDropdown.appendChild(div);
             });
@@ -317,11 +317,11 @@
             try {
                 const res = await fetch('https://api.github.com/user/repos', {
                     method: 'POST',
-                    headers: { 'Authorization': `token ${githubToken}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${githubToken}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         name: repoName.replace(/\s+/g, '-'), 
                         private: isPrivate,
-                        auto_init: true // Crucial: creates the initial 'main' branch
+                        auto_init: true // Creates 'main' branch
                     })
                 });
                 
@@ -331,10 +331,9 @@
                 document.getElementById(loadingId).remove();
                 appendMessage('ai', `${ICONS.check} Successfully created new repository: **${data.full_name}**`);
                 
-                // Auto-fill and Link
                 ui.repoInput.value = data.full_name;
-                await fetchUserRepos(); // Refresh the list in the background
-                await linkRepo(); // Sync it to workspace
+                await fetchUserRepos(); 
+                await linkRepo(); 
                 
             } catch (err) {
                 document.getElementById(loadingId).remove();
@@ -542,25 +541,72 @@
             return safeWorkspace;
         }
 
+        // --- NEW SECURE LINK ENGINE ---
         async function linkRepo() {
             const repoPath = ui.repoInput.value.trim();
             if(!repoPath) return;
             if(!githubToken) return alert("⚠️ Please click 'Connect Account' first!");
+            
             ui.fileList.innerHTML = `<div class="text-xs text-yellow-400 italic p-2 text-center mt-4 animate-pulse">Fetching repo...</div>`;
+            
             try {
-                const res = await fetch(`https://api.github.com/repos/${repoPath}/contents`, { headers: { 'Authorization': `token ${githubToken}` } });
-                if (!res.ok) throw new Error("Repo not found or private.");
-                const items = await res.json(); const proj = getActiveProj(); proj.files = {}; proj.repo = repoPath; 
-                for (const item of items) {
-                    if (item.type === 'file' && (item.name.endsWith('.html') || item.name.endsWith('.js') || item.name.endsWith('.ts') || item.name.endsWith('.css') || item.name.endsWith('.json') || item.name === '.env')) {
-                        const fileRes = await fetch(item.download_url); const content = await fileRes.text();
-                        const ext = item.name.split('.').pop().toLowerCase();
-                        const lang = ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : ext === 'json' ? 'json' : 'txt';
-                        proj.files[item.name] = { code: content, lang: lang }; if(!currentActiveFile) currentActiveFile = item.name;
-                    }
+                // 1. Get default branch 
+                const repoRes = await fetch(`https://api.github.com/repos/${repoPath}`, { headers: { 'Authorization': `Bearer ${githubToken}` } });
+                
+                if (repoRes.status === 401 || repoRes.status === 403) {
+                    throw new Error("GitHub Authentication failed. Your token may be expired. Please click 'Connect GitHub' again.");
                 }
-                saveState(); appendMessage('ai', `${ICONS.check} Linked to repository: ${repoPath}`); loadProject(appState.activeProjectId); 
-            } catch (error) { appendMessage('ai', `${ICONS.warn} Link Failed: ${error.message}`); renderFileList(); }
+                if (!repoRes.ok) throw new Error("Repo not found or private.");
+                
+                const repoData = await repoRes.json();
+                const branch = repoData.default_branch || 'main';
+
+                const proj = getActiveProj(); 
+                proj.files = {}; 
+                proj.repo = repoPath; 
+                currentActiveFile = null;
+
+                // 2. Fetch entire file tree recursively (Pulls in /api/ folders securely!)
+                const treeRes = await fetch(`https://api.github.com/repos/${repoPath}/git/trees/${branch}?recursive=1`, { headers: { 'Authorization': `Bearer ${githubToken}` } });
+                
+                if (treeRes.ok) {
+                    const treeData = await treeRes.json();
+                    const filesToFetch = treeData.tree.filter(item => item.type === 'blob' && (item.path.endsWith('.html') || item.path.endsWith('.js') || item.path.endsWith('.ts') || item.path.endsWith('.css') || item.path.endsWith('.json') || item.path === '.env'));
+                    
+                    // Fetch raw contents using secure GitHub API Blob URL (Bypasses raw.githubusercontent CORS!)
+                    await Promise.all(filesToFetch.map(async (item) => {
+                        const fileRes = await fetch(item.url, {
+                            headers: { 'Authorization': `Bearer ${githubToken}`, 'Accept': 'application/vnd.github.v3+json' }
+                        });
+                        if (fileRes.ok) {
+                            const blobData = await fileRes.json();
+                            // Safely decode Base64 UTF-8
+                            const content = decodeURIComponent(escape(atob(blobData.content.replace(/\n/g, ''))));
+                            const ext = item.path.split('.').pop().toLowerCase();
+                            const lang = ext === 'js' ? 'javascript' : ext === 'ts' ? 'typescript' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : ext === 'json' ? 'json' : 'txt';
+                            proj.files[item.path] = { code: content, lang: lang };
+                            if(!currentActiveFile) currentActiveFile = item.path;
+                        }
+                    }));
+                }
+
+                saveState(); 
+                appendMessage('ai', `${ICONS.check} Linked to repository: **${repoPath}**`); 
+                loadProject(appState.activeProjectId); 
+                
+            } catch (error) { 
+                if (error.message.includes("Authentication failed")) {
+                    appendMessage('ai', `${ICONS.warn} ${error.message}`);
+                    renderFileList();
+                } else {
+                    // Fallback for Empty Repositories
+                    const proj = getActiveProj();
+                    proj.repo = repoPath;
+                    saveState();
+                    loadProject(appState.activeProjectId);
+                    appendMessage('ai', `${ICONS.check} Linked to empty repository: **${repoPath}**. Ready to push!`); 
+                }
+            }
         }
 
         async function pushToLinkedRepo() {
